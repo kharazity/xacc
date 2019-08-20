@@ -16,7 +16,6 @@
 #include "Compiler.hpp"
 #include "RemoteAccelerator.hpp"
 #include "IRProvider.hpp"
-// #include "IRGenerator.hpp"
 
 #include "Algorithm.hpp"
 #include "Optimizer.hpp"
@@ -57,7 +56,6 @@ public:
 qbit qalloc(const int n);
 
 void Initialize(int argc, char **argv);
-
 void Initialize(std::vector<std::string> argv);
 void Initialize();
 bool isInitialized();
@@ -132,7 +130,6 @@ std::shared_ptr<Optimizer> getOptimizer(const std::string name,
                                         const HeterogeneousMap &&opts);
 
 bool hasCache(const std::string fileName, const std::string subdirectory = "");
-
 HeterogeneousMap getCache(const std::string fileName,
                                            const std::string subdirectory = "");
 void appendCache(const std::string fileName, HeterogeneousMap &params,

@@ -11,18 +11,10 @@
 #   Alexander J. McCaskey - initial API and implementation
 # *******************************************************************************/
 project(xacc LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
-set(CMAKE_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
-message(STATUS "C++ version ${CXX_STANDARD} configured.")
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 option(XACC_BUILD_TESTS "Build test programs" OFF)
 option(XACC_BUILD_EXAMPLES "Build example programs" OFF)
-
-if (FROM_SETUP_PY AND NOT APPLE)
-   message(STATUS "Running build from setup.py, linking to static libstdc++")
-   set (CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++" CACHE INTERNAL "" FORCE)
-endif()
 
 set(CMAKE_DEBUG_POSTFIX "")
 set(CMAKE_SKIP_INSTALL_RPATH OFF)
@@ -44,7 +36,6 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 include(format)
-include(ExternalProject)
 
 if(NOT WIN32)
   string(ASCII 27 Esc)
@@ -89,20 +80,11 @@ endif()
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
 include_directories(${CMAKE_BINARY_DIR}/tpls/cppmicroservices/include)
 add_subdirectory(tpls)
-
 add_subdirectory(xacc)
 add_subdirectory(quantum)
 if(PYTHON_INCLUDE_DIR)
  add_subdirectory(python)
 endif()
-
-#find_package(Clang 9.0.0)
-#if (CLANG_FOUND)
-#  add_subdirectory(tools)
-#  configure_file(${CMAKE_SOURCE_DIR}/scripts/xacc.in
-#                 ${CMAKE_BINARY_DIR}/scripts/xacc)
-#  install(PROGRAMS ${CMAKE_BINARY_DIR}/scripts/xacc DESTINATION bin)
-#endif()
 
 # Install the config file for external projects to use
 # This is cool, users just add find_package(XACC REQUIRED) to

@@ -71,7 +71,6 @@ public:
   HeterogeneousMap(TYPES &&... list) {
     loop_pairs(list...);
   }
-
   template <typename... Ts> void print(std::ostream &os) const {
     _internal_print_visitor<Ts...> v(os);
     visit(v);
