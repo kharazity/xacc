@@ -6,7 +6,7 @@ To build the mlpack optimizer plugins, you must pull down ensmallen and armadill
 $ mkdir $HOME/.xacc_tpls
 $ cd $HOME/.xacc_tpls
 $ git clone https://github.com/mlpack/ensmallen
-$ git clone https://gitlab.com/conradsnicta/armadillo-code
+$ git clone https://gitlab.com/conradsnicta/armadillo-code armadillo
 ```
 
 Now configure XACC, pointing to the appropriate ensmallen and armadillo-code installs
