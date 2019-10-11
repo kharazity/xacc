@@ -18,7 +18,6 @@
 #include <memory>
 #include <iomanip>
 #include <cassert>
-#include "InstructionIterator.hpp"
 
 using namespace xacc;
 
@@ -68,20 +67,9 @@ void DDCL::execute(const std::shared_ptr<AcceleratorBuffer> buffer) const {
       [&, this](const std::vector<double> &x, std::vector<double> &dx) {
         // Evaluate and add measurements to all qubits
         auto evaled = kernel->operator()(x);
-        std::set<std::size_t> uniqueBits;
-        InstructionIterator iter(evaled);
-        while(iter.hasNext()) {
-           auto next = iter.next();
-           if (!next->isComposite()) {
-               for (auto& b : next->bits()) {
-                  uniqueBits.insert(b);
-               }
-            }
-          }
-        for (auto b : uniqueBits) {
-//        for (std::size_t i = 0; i < buffer->size(); i++) {
+        for (std::size_t i = 0; i < buffer->size(); i++) {
           auto m = provider->createInstruction("Measure",
-                                               std::vector<std::size_t>{b});
+                                               std::vector<std::size_t>{i});
           evaled->addInstruction(m);
         }
 
