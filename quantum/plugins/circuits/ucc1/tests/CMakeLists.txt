@@ -10,5 +10,5 @@
 # Contributors:
 #   Alexander J. McCaskey - initial API and implementation
 # *******************************************************************************/
-add_subdirectory(ddcl)
-#add_subdirectory(rbm_classification)
+add_xacc_test(UCC1)
+target_link_libraries(UCC1Tester xacc-quantum-gate)

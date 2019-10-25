@@ -10,6 +10,5 @@
 # Contributors:
 #   Alexander J. McCaskey - initial API and implementation
 # *******************************************************************************/
-include_directories(${CMAKE_BINARY_DIR})
-add_xacc_test(RBMClassification)
-target_link_libraries(RBMClassificationTester xacc)
+add_xacc_test(UCC3)
+target_link_libraries(UCC3Tester xacc-quantum-gate)
