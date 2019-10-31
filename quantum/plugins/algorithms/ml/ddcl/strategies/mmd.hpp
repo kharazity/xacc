@@ -72,12 +72,10 @@ protected:
     //YOU_CALLED_A_FIXED_SIZE_METHOD_ON_A_DYNAMIC_SIZE_MATRIX
     Eigen::VectorXd P = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(px.data(), px.size());
     Eigen::VectorXd Q = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(py.data(), py.size());
-    //std::cout<<"K =\n" << K << "\n";
 
     auto temp = K*Q;
     double expectation = P.dot(temp);
 
-    //std::cout << "expect = \n" << expectation << "\n";
 
     return expectation;
   }
@@ -104,12 +102,6 @@ public:
       {
         pxy[i] = std::abs(target[i] - q[i]);
       }
-
-    std::cout<<"pxy = [";
-    for(int i = 0; i < pxy.size(); i++){
-      std::cout<< pxy[i] <<", ";
-    }
-    std::cout<<"]"<<"\n";
 
 
     //worried about edge cases, anywhere in here where I can access this information
@@ -163,12 +155,10 @@ public:
       //YOU_CALLED_A_FIXED_SIZE_METHOD_ON_A_DYNAMIC_SIZE_MATRIX
       Eigen::VectorXd P = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(px.data(), px.size());
       Eigen::VectorXd Q = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(py.data(), py.size());
-      //std::cout<<"K =\n" << K << "\n";
 
       auto temp = K*Q;
       double expectation = P.dot(temp);
 
-      //std::cout << "expect = \n" << expectation << "\n";
       return expectation;
     }
 
@@ -180,7 +170,7 @@ public:
       for(int i = 0; i < temp_x.size(); i++){
         temp_x[i] = (x[i] >> i)&1;
         temp_y[i] = (y[i] >> i)&1;
-      } 
+      }
         Eigen::MatrixXd dx2 = Eigen::MatrixXd::Zero(x.size(), x.size());
         for(int i = 0; i < x.size(); i++){
           for(int j = 0; j < x.size(); j++){
@@ -310,7 +300,7 @@ public:
         grad_pos_targ[i] = kernel_expect(K, qplus_theta[i], target_dist);
         grad_neg_targ[i] = kernel_expect(K, qminus_theta[i], target_dist);
         grad[i] = grad_pos[i]-grad_pos_targ[i]-grad_neg[i]+grad_neg_targ[i];
-        std::cout<<"grad:  "<<grad[i]<<"\n";
+        
       }
       return;
     }
