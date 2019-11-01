@@ -335,6 +335,7 @@ public:
   std::shared_ptr<Instruction> clone() override {
     return std::make_shared<Circuit>(*this);
   }
+  
   virtual ~Circuit() {}
 };
 
