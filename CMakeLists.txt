@@ -10,8 +10,8 @@
 # Contributors:
 #   Alexander J. McCaskey - initial API and implementation
 # *******************************************************************************/
-project(xacc LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+project(xacc VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 message(STATUS "C++ version ${CXX_STANDARD} configured.")
@@ -24,6 +24,27 @@ option(XACC_ARMADILLO_INCLUDE_DIR "Path to armadillo header for mlpack optimizer
 if (FROM_SETUP_PY AND NOT APPLE)
    message(STATUS "Running build from setup.py, linking to static libstdc++")
    set (CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++" CACHE INTERNAL "" FORCE)
+endif()
+
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    # Update submodules as needed
+    option(GIT_SUBMODULE "Check submodules during build" ON)
+    if(GIT_SUBMODULE)
+        message(STATUS "Submodule update")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+        endif()
+    endif()
+endif()
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/tpls/cppmicroservices/CMakeLists.txt"
+    OR NOT EXISTS "${CMAKE_SOURCE_DIR}/tpls/boost-cmake/CMakeLists.txt"
+    OR NOT EXISTS "${CMAKE_SOURCE_DIR}/tpls/cpr/CMakeLists.txt")
+    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
 set(CMAKE_DEBUG_POSTFIX "")
@@ -94,8 +115,33 @@ add_subdirectory(tpls)
 
 add_subdirectory(xacc)
 add_subdirectory(quantum)
-if(PYTHON_INCLUDE_DIR)
- add_subdirectory(python)
+
+find_package(Python COMPONENTS Interpreter Development)
+if(Python_FOUND)
+ if(${Python_VERSION} VERSION_GREATER_EQUAL 3.0.0)
+   message(STATUS "${BoldGreen}Found Python version ${Python_VERSION}. Building XACC Python API with ${Python_INCLUDE_DIRS}${ColorReset}")
+   add_subdirectory(python)
+   # Double check we have module ipopo installed, contributes pelix
+   execute_process(COMMAND ${Python_EXECUTABLE} -c "import pelix" RESULT_VARIABLE PELIX_EXISTS)
+   if (PELIX_EXISTS EQUAL "1")
+     # if not, check we have pip
+     execute_process(COMMAND ${Python_EXECUTABLE} -c "import pip" RESULT_VARIABLE PIP_EXISTS)
+     if (PIP_EXISTS EQUAL "0") 
+	# we have pip, son just install ipopo
+        message(STATUS "${BoldGreen}Installing Pelix OSGi framework.${ColorReset}")
+        execute_process(COMMAND ${Python_EXECUTABLE} -m pip install ipopo)
+     else()
+	# we dont have pip, so warn the user
+	message(STATUS "${BoldYellow}Pelix Framework not found, but can't install via pip. Ensure you install ipopo module before using XACC Python API.${ColorReset}")
+     endif()
+   else()
+     message(STATUS "${BoldGreen}Found Pelix framework.${ColorReset}")
+   endif()
+ else()
+    message(STATUS "${BoldYellow}Found Python version ${Python_VERSION}. Version must be greater than 3.0.0, skipping Python API build.${ColorReset}")
+ endif()
+else()
+  message(STATUS "${BoldYellow}Python interpreter or development headers not found. Skipping Python API build.${ColorReset}")
 endif()
 
 # Install the config file for external projects to use
@@ -107,6 +153,7 @@ install(FILES "${CMAKE_BINARY_DIR}/xacc-config.cmake" DESTINATION .)
 install(FILES "${CMAKE_SOURCE_DIR}/cmake/Modules/format.cmake" DESTINATION share/xacc/)
 install(FILES "${CMAKE_SOURCE_DIR}/tpls/mpark-variant/variant.hpp" DESTINATION include/xacc/)
 install(FILES "${CMAKE_SOURCE_DIR}/tpls/taocpp/operators.hpp" DESTINATION include/xacc/)
+install(FILES "${CMAKE_SOURCE_DIR}/tpls/nlohmann/json.hpp" DESTINATION include/xacc/)
 
 install( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/spdlog" DESTINATION include )
 install( DIRECTORY "${CMAKE_SOURCE_DIR}/tpls/exprtk" DESTINATION include )

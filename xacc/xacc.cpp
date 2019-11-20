@@ -271,7 +271,7 @@ std::shared_ptr<Accelerator> getAccelerator(const std::string &name,
 
   if (name_backend.size() > 1) {
     std::string b = name_backend[1];
-    m.insert(name_backend[0]+"-backend", b);
+    m.insert("backend", b);
     setOption(name_backend[0] + "-backend", name_backend[1]);
   }
 
@@ -628,6 +628,22 @@ void qasm(const std::string &qasmString) {
 
   for (auto &k : ir->getComposites())
     appendCompiled(k, true);
+}
+namespace ir {
+    std::shared_ptr<CompositeInstruction> asComposite(std::shared_ptr<Instruction> inst) {
+        auto comp = std::dynamic_pointer_cast<CompositeInstruction>(inst);
+        if(!comp) {
+            error("Invalid conversion of Instruction to CompositeInstruction.");
+        }
+        return comp;
+    }
+    std::shared_ptr<Instruction> asInstruction(std::shared_ptr<CompositeInstruction> comp) {
+        auto inst = std::dynamic_pointer_cast<Instruction>(comp);
+        if(!inst) {
+            error("Invalid conversion of CompositeInstruction to Instruction.");
+        }
+        return inst;
+    }
 }
 
 void Finalize() {

@@ -13,7 +13,7 @@
 add_subdirectory(compiler)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
-include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${Python_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/tpls/pybind11/include)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -O2 -g -pipe -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wformat -fexceptions --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -D_GNU_SOURCE -fPIC -fwrapv")
@@ -23,7 +23,7 @@ endif(APPLE)
 
 add_library(_pyxacc SHARED xacc-py.cpp)
 set_target_properties(_pyxacc PROPERTIES PREFIX "")
-target_link_libraries(_pyxacc PUBLIC xacc xacc-pauli xacc-fermion)
+target_link_libraries(_pyxacc PUBLIC xacc xacc-pauli xacc-fermion )
 
 if(APPLE)
    set_target_properties(_pyxacc PROPERTIES INSTALL_RPATH "@loader_path/lib")
@@ -38,5 +38,5 @@ install(FILES xacc.py DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY plugin_generator DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY benchmark DESTINATION ${CMAKE_INSTALL_PREFIX})
 
-file(GLOB PYDECORATORS ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/vqe/*.py)
+file(GLOB PYDECORATORS ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/vqe/*.py plugins/aer/*.py)
 install(FILES ${PYDECORATORS} DESTINATION ${CMAKE_INSTALL_PREFIX}/py-plugins)

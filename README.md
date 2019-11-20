@@ -19,34 +19,53 @@ Documentation
 
 Build from Source
 -----------------
-Ensure that you have installed CMake 3.2+, a C++14 compliant compiler (GCC 6+, Clang 3.4+), and
+Ensure that you have installed CMake 3.12+, a C++14 compliant compiler (GCC 6+, Clang 3.4+), and
 CURL development headers and libraries with OpenSSL support
 (see [prerequisites](http://xacc.readthedocs.io/en/latest/install.html#pre-requisites)).
 
 Optional dependencies include BLAS and LAPACK development libraries (for various simulators),
-Python 3 development headers and library (for the Python API), and Libunwind (for stack trace printing).
+Python 3 development headers (for the Python API), and Libunwind (for stack trace printing).
+
+To enable Python support, ensure that `python3` is set to your desired version of Python 3. CMake will
+find the corresponding development headers. Ensure that when you try to run XACC-enabled Python scripts
+you are using the same `python3` executable that was set during your build.
+
+If you are on Mac OS X, make sure you have XCode command utilities installed. A common issue seen
+is missing standard includes like `wchar.h` and others. See [here](https://stackoverflow.com/a/52530212)
+for proper XCode install and configuring to address these types of issues.
 
 Clone the repository recursively, configure with `cmake` and build with `make`
 ```bash
-$ git clone --recursive https://github.com/eclipse/xacc
+$ git clone https://github.com/eclipse/xacc
 $ cd xacc && mkdir build && cd build
-[default]
+[default cmake call]
 $ cmake ..
-[with python api]
-$ cmake .. -DPYTHON_INCLUDE_DIR=/path/to/python/headers
-[with tests]
-$ cmake .. -DXACC_BUILD_TESTS=TRUE
-[or any combination of the above]
-$ cmake .. -DPYTHON_INCLUDE_DIR=/path/to/python/headers -DXACC_BUILD_TESTS=TRUE
+[with tests and examples]
+$ cmake .. -DXACC_BUILD_EXAMPLES=TRUE -DXACC_BUILD_TESTS=TRUE
 [now build xacc]
 $ make install
-[if you built with tests]
-$ ctest
+[for a speedier build on linux]
+$ make -j$(nproc --all) install
+[and on mac os x]
+$ make -j$(sysctl -n hw.physicalcpu) install
+[if built with tests, run them]
+$ ctest --output-on-failure
 ```
-Your installation will be in `$HOME/.xacc`. If you built with the Python API, be sure to update your `PYTHONPATH`
-environment variable to point to the installation:
+See full documentation for all CMake optional arguments. To enable MLPack Optimizer support, see
+[MLPack Readme](https://github.com/eclipse/xacc/blob/master/xacc/optimizer/README.md)
+
+Your installation will be in `$HOME/.xacc`. If you built with the Python API,
+be sure to update your `PYTHONPATH` environment variable to point to the installation:
 ```bash
 $ export PYTHONPATH=$PYTHONPATH:$HOME/.xacc
+```
+
+You will probably want the XACC default simulator, TNQVM. To install, run the following:
+```bash
+$ git clone https://github.com/ornl-qci/tnqvm
+$ cd tnqvm && mkdir build && cd build
+$ cmake .. -DXACC_DIR=~/.xacc
+$ make install
 ```
 
 Questions, Bug Reporting, and Issue Tracking
