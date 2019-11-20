@@ -15,11 +15,7 @@ tnqvmBuffer = xacc.qalloc(2)
 qpu = xacc.getAcceleratorDecorator('ro-error', qpu)
 
 # Construct the Hamiltonian
-ham = PauliOperator(5.906709445) + \
-    PauliOperator({0: 'X', 1: 'X'}, -2.1433) + \
-    PauliOperator({0: 'Y', 1: 'Y'}, -2.1433) + \
-    PauliOperator({0: 'Z'}, .21829) + \
-    PauliOperator({1: 'Z'}, -6.125)
+ham = xacc.getObservable('pauli', '5.907 - 2.1433 X0X1 - 2.1433 Y0Y1 + .21829 Z0 - 6.125 Z1')
 
 # Define the ansatz and decorate it to indicate
 # you'd like to run VQE
@@ -49,14 +45,15 @@ for p in uniqueParams:
     re, ra, tn = [0.0 for i in range(3)]
     # print(children[0])
     for c in children:
+        print(c.name(), c.getInformation('kernel'))
         coeff = c.getInformation('coefficient')
         re += coeff * c.getInformation('ro-fixed-exp-val-z')
         ra += coeff * c.getInformation('exp-val-z')
-    ro_energies.append(5.906709445+re)
-    raw_energies.append(5.906709445+ra)
+    ro_energies.append(re)
+    raw_energies.append(ra)
     for c in tChildren:
         tn += c.getInformation('coefficient')*c.getInformation('exp-val-z')
-    tnqvm_energies.append(5.906709445+tn)
+    tnqvm_energies.append(tn)
 
 for i,t in enumerate(np.linspace(-np.pi,np.pi,nAngles)):
     print(t, tnqvm_energies[i], raw_energies[i], ro_energies[i])

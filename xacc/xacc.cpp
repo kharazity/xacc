@@ -19,6 +19,7 @@
 #include <fstream>
 #include "xacc_config.hpp"
 #include "cxxopts.hpp"
+#include "AcceleratorDecorator.hpp"
 
 #include "xacc_service.hpp"
 
@@ -186,6 +187,23 @@ void setAccelerator(const std::string &acceleratorName) {
   setOption("accelerator", acceleratorName);
 }
 
+std::shared_ptr<Accelerator> getAcceleratorDecorator(const std::string& decorator, std::shared_ptr<Accelerator> acc, const HeterogeneousMap& params) {
+ std::shared_ptr<AcceleratorDecorator> accd;
+  if (xacc::hasService<AcceleratorDecorator>(decorator)) {
+    accd = xacc::getService<AcceleratorDecorator>(decorator, false);
+  } else if (xacc::hasContributedService<AcceleratorDecorator>(decorator)) {
+    accd = xacc::getContributedService<AcceleratorDecorator>(decorator, false);
+  }
+
+  if (!accd) {
+      xacc::error("Cannot find AcceleratorDecorator with name " + decorator);
+  }
+
+  accd->setDecorated(acc);
+  accd->initialize(params);
+  return accd;
+}
+
 std::shared_ptr<Accelerator> getAccelerator() {
   if (!xacc::xaccFrameworkInitialized) {
     error("XACC not initialized before use.\nPlease execute "
@@ -347,7 +365,17 @@ std::shared_ptr<Optimizer> getOptimizer(const std::string name) {
     error("XACC not initialized before use. Please execute "
           "xacc::Initialize() before using API.");
   }
-  return xacc::getService<Optimizer>(name);
+   std::shared_ptr<Optimizer> t;
+  if (xacc::hasService<Optimizer>(name)) {
+    t = xacc::getService<Optimizer>(name, false);
+  } else if (xacc::hasContributedService<Optimizer>(name)) {
+    t = xacc::getContributedService<Optimizer>(name, false);
+  }
+
+  if (!t) {
+      xacc::error("Invalid Optimizer name, not in service registry - " + name);
+  }
+  return t;
 }
 
 std::shared_ptr<Optimizer> getOptimizer(const std::string name,
@@ -410,7 +438,7 @@ getIRTransformation(const std::string &name) {
           "xacc::Initialize() before using API.");
   }
 
-   std::shared_ptr<IRTransformation> t;
+  std::shared_ptr<IRTransformation> t;
   if (xacc::hasService<IRTransformation>(name)) {
     t = xacc::getService<IRTransformation>(name, false);
   } else if (xacc::hasContributedService<IRTransformation>(name)) {

@@ -7,6 +7,13 @@ describe the build process with the Python API enabled. For this you will need a
 development install. To interact with remote QPUs, you will need CURL with OpenSSL development
 headers and libraries.
 
+Quick-Start with Docker
+-----------------------
+To get up and running quickly and avoid installing the prerequisites you can
+pull the ``xacc/dev`` Docker image (see `here <https://xacc.readthedocs.io/en/latest/developers.html#quick-start-with-docker>`_ for instructions).
+Once you have the IDE up and running, you can skip down to `cloning XACC <https://xacc.readthedocs.io/en/latest/install.html#build-xacc>`_.
+
+
 Prerequisites
 -------------
 Ubuntu 16.04
@@ -97,7 +104,7 @@ You can run Python examples as well
 .. code:: bash
 
    [ you may also want to add this to your .bashrc ]
-   $ export PYTHONPATH:$PYTHONPATH:$HOME/.xacc
+   $ export PYTHONPATH=$PYTHONPATH:$HOME/.xacc
    $ python3 ../python/examples/ddcl_example.py
 
 Most users build and install the TNQVM Accelerator

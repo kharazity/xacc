@@ -31,6 +31,7 @@ protected:
     //it's always the case that x = y = [0, 1, ..., pow(2, num_bit)-1];
     std::vector<int> temp_x(x.size());
     std::vector<int> temp_y(y.size());
+<<<<<<< HEAD
     Eigen::MatrixXd dx2 = Eigen::MatrixXd::Zero(x.size(), x.size());
     for(int i = 0; i < num_bit; i++){
       for(int j = 0; j < x.size(); j++){
@@ -46,11 +47,28 @@ protected:
     }
     return _mix_rbf_kernel_d(dx2, sigma_list);
 
+=======
+    for(int i = 0; i < temp_x.size(); i++){
+      temp_x[i] = (x[i] >> i)&1;
+      temp_y[i] = (y[i] >> i)&1;
+    }
+
+    Eigen::MatrixXd dx2 = Eigen::MatrixXd::Zero(x.size(), x.size());
+    for(int i = 0; i < x.size(); i++){
+      for(int j = 0; j < x.size(); j++){
+        if(x[i] != y[j]){
+          dx2(i,j)= 1;
+        }
+      }
+    }
+    return _mix_rbf_kernel_d(dx2, sigma_list);
+>>>>>>> upstream/master
   }
 
 
   Eigen::MatrixXd _mix_rbf_kernel_d(Eigen::MatrixXd dx2, std::vector<double> sigma_list){
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dx2.rows(), dx2.cols());
+<<<<<<< HEAD
       Eigen::MatrixXd _dx2 = dx2;
       for(auto &sigma : sigma_list){
         double gamma = 1.0/(2*sigma);
@@ -64,24 +82,55 @@ protected:
       return K;
   }
 
+=======
+    Eigen::MatrixXd _dx2 = dx2;
+    for(auto &sigma : sigma_list){
+      double gamma = 1.0/(2*sigma);
+      for(int i = 0; i < dx2.rows(); i++){
+        for(int j = 0; j < dx2.cols(); j++){
+          _dx2(i,j) = std::exp(-gamma*dx2(i,j));
+        }
+      }
+      K += _dx2;
+    }
+    return K;
+  }
+
+  
+>>>>>>> upstream/master
   double kernel_expect(Eigen::MatrixXd K,
                        std::vector<double> px,
                        std::vector<double>  py){
     int len = px.size();
     //This takes px and py and turns them into eigen::Vector objects
+<<<<<<< HEAD
     Eigen::VectorXd P = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(px.data(), px.size());
     Eigen::VectorXd Q = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(py.data(), py.size());
+=======
+    //YOU_CALLED_A_FIXED_SIZE_METHOD_ON_A_DYNAMIC_SIZE_MATRIX
+    Eigen::VectorXd P = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(px.data(), px.size());
+    Eigen::VectorXd Q = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(py.data(), py.size());
+    //std::cout<<"K =\n" << K << "\n";
+>>>>>>> upstream/master
 
     auto temp = K*Q;
     double expectation = P.dot(temp);
 
+<<<<<<< HEAD
+=======
+    //std::cout << "expect = \n" << expectation << "\n";
+>>>>>>> upstream/master
 
     return expectation;
   }
 
 public:
   std::pair<double, std::vector<double>>
+<<<<<<< HEAD
   compute(Counts &counts, const std::vector<double> &target, const HeterogeneousMap& options = {}) override {
+=======
+  compute(Counts &counts, const std::vector<double> &target, const HeterogeneousMap& = {}) override {
+>>>>>>> upstream/master
     int shots = 0;
     for (auto &x : counts) {
       shots += x.second;
@@ -102,6 +151,15 @@ public:
         pxy[i] = std::abs(target[i] - q[i]);
       }
 
+<<<<<<< HEAD
+=======
+    std::cout<<"pxy = [";
+    for(int i = 0; i < pxy.size(); i++){
+      std::cout<< pxy[i] <<", ";
+    }
+    std::cout<<"]"<<"\n";
+
+>>>>>>> upstream/master
 
     //worried about edge cases, anywhere in here where I can access this information
     //without type instability
@@ -114,10 +172,14 @@ public:
       basis[i] = i;
     }
 
+<<<<<<< HEAD
     //if heterogenousmap
     //std::vector<double> sigma_list = {};
     //else
     std::vector<double> sigma_list = {0.25};
+=======
+    std::vector<double> sigma_list = {0.1};
+>>>>>>> upstream/master
     Eigen::MatrixXd K = mix_rbf_kernel(basis, basis, sigma_list, num_bit);
     auto mmd = kernel_expect(K, pxy, pxy);
 
@@ -138,6 +200,14 @@ public:
 
   //Loss function implemetation complete
 
+<<<<<<< HEAD
+=======
+  //TODO figure a way to pass sigma_list to compute
+  //figure out how to get num_bit info without type instability
+
+
+
+>>>>>>> upstream/master
 
 
   class MMDParameterShiftGradientStrategy : public GradientStrategy {
@@ -152,10 +222,19 @@ public:
       //YOU_CALLED_A_FIXED_SIZE_METHOD_ON_A_DYNAMIC_SIZE_MATRIX
       Eigen::VectorXd P = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(px.data(), px.size());
       Eigen::VectorXd Q = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(py.data(), py.size());
+<<<<<<< HEAD
 
       double expectation = P.dot(K*Q);
 
 
+=======
+      //std::cout<<"K =\n" << K << "\n";
+
+      auto temp = K*Q;
+      double expectation = P.dot(temp);
+
+      //std::cout << "expect = \n" << expectation << "\n";
+>>>>>>> upstream/master
       return expectation;
     }
 
@@ -164,6 +243,7 @@ public:
       //it's always the case that x = y = [0, 1, ..., pow(2, num_bit)-1];
       std::vector<int> temp_x(x.size());
       std::vector<int> temp_y(y.size());
+<<<<<<< HEAD
       Eigen::MatrixXd dx2 = Eigen::MatrixXd::Zero(x.size(), x.size());
       for(int i = 0; i < num_bit; i++){
         for(int j = 0; j < x.size(); j++){
@@ -176,6 +256,20 @@ public:
           }
         }
       }
+=======
+      for(int i = 0; i < temp_x.size(); i++){
+        temp_x[i] = (x[i] >> i)&1;
+        temp_y[i] = (y[i] >> i)&1;
+      } 
+        Eigen::MatrixXd dx2 = Eigen::MatrixXd::Zero(x.size(), x.size());
+        for(int i = 0; i < x.size(); i++){
+          for(int j = 0; j < x.size(); j++){
+            if(x[i] != y[j]){
+              dx2(i,j)= 1;
+            }
+          }
+        }
+>>>>>>> upstream/master
         return _mix_rbf_kernel_d(dx2, sigma_list);
     }
 
@@ -184,12 +278,21 @@ public:
       Eigen::MatrixXd _dx2 = dx2;
       for(auto &sigma : sigma_list){
         double gamma = 1.0/(2*sigma);
+<<<<<<< HEAD
           for(int i = 0; i < dx2.rows(); i++){
             for(int j = 0; j < dx2.cols(); j++){
               _dx2(i,j) = std::exp(-gamma*dx2(i,j));
             }
           }
           K += _dx2;
+=======
+        for(int i = 0; i < dx2.rows(); i++){
+          for(int j = 0; j < dx2.cols(); j++){
+            _dx2(i,j) = std::exp(-gamma*dx2(i,j));
+          }
+        }
+        K += _dx2;
+>>>>>>> upstream/master
       }
       return K;
     }
@@ -245,7 +348,10 @@ public:
       int counter = 0;
       std::vector<std::vector<double>> qplus_theta, qminus_theta;
       for (int i = 0; i < results.size(); i += 2) {
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
         std::vector<double> qp(q_dist.size()), qm(q_dist.size());
         for (auto &x : results[i]->getMeasurementCounts()) {
           int idx = std::stoi(x.first, nullptr, 2);
@@ -259,11 +365,17 @@ public:
         std::vector<double> shiftedm = currentParameterSet;
         auto xplus = currentParameterSet[counter] + xacc::constants::pi / 2;
         auto xminus = currentParameterSet[counter] - xacc::constants::pi / 2;
+<<<<<<< HEAD
 
         shiftedp[counter] = xplus;
         shiftedm[counter] = xminus;
 
 
+=======
+        shiftedp[counter] = xplus;
+        shiftedm[counter] = xminus;
+
+>>>>>>> upstream/master
         results[i]->addExtraInfo("gradient-index", counter);
         results[i+1]->addExtraInfo("gradient-index", counter);
 
@@ -280,7 +392,10 @@ public:
         qminus_theta.push_back(qm);
 
         counter++;
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/master
       }
 
       std::vector<double> sigma_list = {0.1};
@@ -291,17 +406,29 @@ public:
       }
       Eigen::MatrixXd K = mix_rbf_kernel(basis, basis, sigma_list, num_bit);
       //compute gradient vector
+<<<<<<< HEAD
       std::vector<double> grad_pos(counter);
       std::vector<double> grad_neg(counter);
       std::vector<double> grad_pos_targ(counter);
       std::vector<double> grad_neg_targ(counter);
 
       for(int i = 0; i < counter; i++){
+=======
+      std::vector<double> grad_pos(q_dist.size());
+      std::vector<double> grad_neg(q_dist.size());
+      std::vector<double> grad_pos_targ(q_dist.size());
+      std::vector<double> grad_neg_targ(q_dist.size());
+      for(int i = 0; i < q_dist.size(); i++){
+>>>>>>> upstream/master
         grad_pos[i] = kernel_expect(K, qplus_theta[i], q_dist);
         grad_neg[i] = kernel_expect(K, qminus_theta[i], q_dist);
         grad_pos_targ[i] = kernel_expect(K, qplus_theta[i], target_dist);
         grad_neg_targ[i] = kernel_expect(K, qminus_theta[i], target_dist);
         grad[i] = grad_pos[i]-grad_pos_targ[i]-grad_neg[i]+grad_neg_targ[i];
+<<<<<<< HEAD
+=======
+        std::cout<<"grad:  "<<grad[i]<<"\n";
+>>>>>>> upstream/master
       }
       return;
     }
