@@ -12,126 +12,110 @@
  *******************************************************************************/
 #include "AssignmentErrorKernelDecorator.hpp"
 #include "InstructionIterator.hpp"
+#include "Utils.hpp"
 #include "xacc.hpp"
 #include <fstream>
+#include <set>
+#include <Eigen/Dense>
 
+namespace xacc{
+namespace quantum{
+  void AssignmentErrorKernelDecorator::initialize(const HeterogeneousMap& params){
+    if(params.keyExists<std::shared_ptr<bool>>("gen-kernel")){
+        gen_kernel = true;
+      }
+  }
+  void AssignmentErrorKernelDecorator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
+                                             const std::shared_ptr<CompositeInstruction> function){
+    //need to generate error kernel on same backend as buffer;
+    //Then I need to actually execute the buffer with that function to get the counts. (there is no preprocessing)
+    //I also need to figure out how to get a bool passed that will allow me to control when I compute the matrix, and if the matrix is computed, how do I save it for the next iteration?
+    //buffer->appendMeasurement()(actual number)
+    //buffer->addExtraInfo()
+    int num_bits = (int)buffer -> size();
+    if(gen_kernel){
+      std::cout<<"put the rest of it here" << std::endl;
+      //auto counts = buffer -> getMeasurementCounts();
+      std::cout << "num_bits = " << num_bits << std::endl;
+      if(decoratedAccelerator){
+        decoratedAccelerator->execute(buffer, function);
+        std::cout<<buffer->getMeasurementCounts()<<std::endl;
+        std::vector<std::string> bitstring(pow(2,num_bits));
+        std::string str = "";
+        std::string curr;
+        int counter = 0;
+        int j = num_bits;
+        while(j--){
+          str.push_back('0');
+        }
+        for(int k = 0; k <= num_bits; k++){
+          str[num_bits - k] = '1';
+          curr = str;
+          do{
+            bitstring[counter] = curr;
 
-namespace xacc {
-namespace quantum {
-  //generate the powerset, which tells the set of all qbit orientations that need to be created for
-  //circuit generation
-  vector<vector<int>> generatePermutationList(int num_bits){
-    vector<int> bits(num_bits) = for(int i = 0: i<num_bits: i++){bits[i] = i;};
-    vector<int> permutations(pow(2,num_bits));
-    while(i < pow(2,num_bits))
-      {
-        for(int j = 0; j < num_bits; j++)
-          {
-            if(i & (1 << j)){
-              permutations[i] = set[j];
-              i++;
-            }
+            counter++;
           }
-      }
-    return permutations;
-  }
-
-  Circuit generateCircuit(int num_bits, vector<vector<int>> permutations){
-    //Here's what this function need to do,
-    /*
-      We're going to recieve a vector of ints which tells us which qubits need to have an X
-      gate applied to them. We can iterate through this list and add composite instructions
-
-     */
-    provider = xacc::getIRProvider("quantum");
-    vector<Circuit> EMCircuits(pow(2,num_bits));
-    vector<auto> counts;
-    for(auto circ: EMCircuits){
-      for(auto x:permutations){
-        for(int qbit: x){
-          auto temp = provider->createInstruction("X", [qbit]);
-        }
-        circ->addInstruction(temp);
-      }
-      counts.push_back(circ->getMeasurements());
-    }
-
-      
-
-
-    Circuit circuit = 0;
-    //something.initialize(num_bits) //maybe it can take this in as a
-      //parameter by reference
- 
-    }
-  }
-
-  //mandate in initialize that there's a key for generating kernel, set false after
-  void AssignmentErrorKernelDecorator::initialize(std::shared_ptr<AcceleratorBuffer> buffer, const HeterogeneousMap &parameters){
-    if(!parameters.keyExists<std::shared_ptr<Bool>>){
-      std::cout<< "Not generating error kernel"
-    }
-    else{
-
-      vector<vector<int>> permutations_list = generatePermutationList(num_bits);
-      for(auto x: permutations_list){
-        //generate the n circuits you need.
-        auto circuit = generateCircuit(qbits)
+          while(next_permutation(curr.begin(), curr.end()));
 
         }
+        //using bitstring to generate circuits
+        std::shared_ptr<AcceleratorBuffer> tmpBuffer = xacc::qalloc(buffer->size());
+        std::vector<std::shared_ptr<CompositeInstruction>> circuits;
+        auto provider = xacc::getIRProvider("quantum");
+        for(int i = 0; i < std::pow(2,num_bits); i++){
+          auto circuit = provider->createComposite(bitstring[i]);
+          int j = num_bits-1;
+          for(char c : bitstring[i]){
+            if(c == '1'){
+              std::cout<<"1 found at position: "<<j<<std::endl;
+              auto x = provider->createInstruction("X", j);
+              circuit->addInstruction(x);
+            }
+            j--;
+          }
+          auto m0  = provider->createInstruction("Measure", 0);
+          auto m1 = provider->createInstruction("Measure", 1);
+          circuit->addInstruction(m0);
+          circuit->addInstruction(m1);
+          std::cout<<"circuit: " << bitstring[i] << std::endl;
+          circuits.push_back(circuit);
+        }
+        decoratedAccelerator->execute(tmpBuffer, circuits);
+        std::cout<<"here"<<std::endl;
+        auto buffers = tmpBuffer->getChildren();
+
+        int shots = 0;
+        //compute num shots;
+        for(auto &x : buffers[0]->getMeasurementCounts()){
+          shots += x.second;
+        }
+        std::cout<<"num_shots = " << shots <<std::endl;
+        //std::vector<auto> results;
+        for (auto &b: buffers){
+          //std::cout<< b->getMeasurementCounts() << std::endl;
+          //results.push_back(b->getMeasurementCounts());
+          //std::cout<<results <<std::endl;
+        }
+        //needs to be computed, or found in buffer
+        //convert results vector<vector> into Eigen Matrix object
+        Eigen::MatrixXd K = Eigen::MatrixXd::Zero(std::pow(2,num_bits), std::pow(2,num_bits));
+        for(int i = 0; i < std::pow(2,num_bits); i++){
+          for(int j = 0; j < std::pow(2,num_bits); j++){
+            std::cout<<"put results here";
+          }
+        }
+        //after kernel is generate set
+        //gen_kernel = false;
+        //take the Eigen Matrix and invert it:
+        //Eigen::MatrixXd Kinv = K.inverse();
+        //state = Kinv*state;
+        //update state in buffer
       }
-
     }
-  }
-  void AssignmentErrorKernelDecorator::execute(
-                                               std::shared_ptr<AcceleratorBuffer> buffer,
-                                               const std::shared_ptr<CompositeInstruction> function) {
-
-    /*Here's what I need to run the Error Kernel
-     I need the number of qubits
-     I need to generate circuits to measure states
-     I need the backend for which to run the kernel on (presumably included in the buffer)
-     I need to return the pow(2,nqbits)x pow(2,nqbits) matrix M*output_state
-     It should also have the option to only run the kernel build if the option is passed
-     This is because:
-     1) it is computational unwise to recreate the kernel for each iteration
-     2) There's no need since the kernel is just to correct for readout error, which we asuume
-     would be constant throughout the iteration process
+    return;
+  }//execute
 
 
-     generating the  matrix:
-
-
-
-
-     inv(E)*result = result' */
-    if (decoratedAccelerator)
-      decorattedAccelerator->execute(buffer, function);
-
-
-    //First step find number of qbits:
-    int num_bits = buffer -> size();
-
-    auto state = buffer -> getMeasurmentCounts();
-    std::cout<<"state = " << state << std::endl;
-    //ibm = xacc.getaccelerator('ibm')
-    //em_ibm = getacceleratordecorator('kmatrix', ibm, {'generate-k':True})
-
-
-    vector<int> permutations = generatePermutationList(num_bits);
-
-    HeterogeneousMap properties;
-    if (decoratedAccelerator) {
-      properties = decoratedAccelerator->getProperties();
-    }
-
-  }
-
-
-
-
-  }
-
-
-}
-
+} //namespace quantum
+} //namespace xacc

@@ -14,17 +14,23 @@
 #define XACC_ASSIGNMENTERRORKERNELDECORATOR_HPP_
 
 #include "AcceleratorDecorator.hpp"
+#include <Eigen/Dense>
 
 namespace xacc {
 
 namespace quantum {
 
 class AssignmentErrorKernelDecorator : public AcceleratorDecorator {
+protected:
+  bool gen_kernel = false;
+  Eigen::MatrixXd errorKernel;
 public:
 
   const std::vector<std::string> configurationKeys() override {
       return {};
   }
+
+  void initialize(const HeterogeneousMap& params = {}) override;
 
   void execute(std::shared_ptr<AcceleratorBuffer> buffer,
                const std::shared_ptr<CompositeInstruction> function) override;
@@ -35,7 +41,7 @@ public:
   const std::string name() const override { return "assignment-error-kernel"; }
   const std::string description() const override { return ""; }
 
-  ~ROErrorDecorator() override {}
+  ~AssignmentErrorKernelDecorator() override {}
 };
 
 }
