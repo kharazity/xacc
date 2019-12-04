@@ -12,7 +12,6 @@
  *******************************************************************************/
 
 #include "AcceleratorDecorator.hpp"
-#include "Instruction.hpp"
 #include "xacc.hpp"
 #include <gtest/gtest.h>
 #include <memory>
@@ -25,25 +24,32 @@ TEST(AssignmentErrorKernelDecoratorTest, checkBasic){
 
   xacc::Initialize();
   xacc::external::load_external_language_plugins();
-  auto accelerator = xacc::getAccelerator("aer", {std::make_pair("shots",2048), std::make_pair("backend", "ibmq_johannesburg"),
-                                                  std::make_pair("readout_error", true), std::make_pair("gate_error", true)});
+  xacc::set_verbose(true);
+  auto accelerator = xacc::getAccelerator("aer", {std::make_pair("shots",2048),
+                                                  std::make_pair("backend", "ibmq_johannesburg"),
+                                                  std::make_pair("readout_error", true),
+                                                  std::make_pair("gate_error", true)});
  
   int num_qubits = 2;
-  auto buffer = xacc::qalloc(num_qubits);
+
 
   auto compiler = xacc::getService<xacc::Compiler>("xasm");
-  const std::string src = R"src(__qpu__ void foo(qbit q) {
-       H(q[0]);
-       CNOT(q[1],q[0]);
-       Measure(q[0]);
-       Measure(q[1]);
-       })src";
-  auto ir = compiler->compile(src, accelerator);
-  auto f = ir->getComposite("foo");
+  xacc::qasm(R"(
+.compiler xasm
+.circuit bell
+.qbit q
+H(q[0]);
+CX(q[0], q[1]);
+Measure(q[0]);
+Measure(q[1]);
+)");
+  auto bell = xacc::getCompiled("bell");
+  auto buffer = xacc::qalloc(num_qubits);
   auto decorator = xacc::getService<AcceleratorDecorator>("assignment-error-kernel");
   decorator->initialize({std::make_pair("gen-kernel", true)});
   decorator->setDecorated(accelerator);
-  decorator->execute(buffer, f);
+  decorator->execute(buffer, bell);
+  buffer->print();
   xacc::external::unload_external_language_plugins();
   xacc::Finalize();
 }

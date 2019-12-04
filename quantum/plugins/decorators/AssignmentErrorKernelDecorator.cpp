@@ -32,7 +32,7 @@ namespace quantum{
     //I also need to figure out how to get a bool passed that will allow me to control when I compute the matrix, and if the matrix is computed, how do I save it for the next iteration?
     //buffer->appendMeasurement()(actual number)
     //buffer->addExtraInfo()
-    int num_bits = (int)buffer -> size();
+    int num_bits = (int)buffer->size();
     if(gen_kernel){
       std::cout<<"put the rest of it here" << std::endl;
       //auto counts = buffer -> getMeasurementCounts();
@@ -53,7 +53,6 @@ namespace quantum{
           curr = str;
           do{
             bitstring[counter] = curr;
-
             counter++;
           }
           while(next_permutation(curr.begin(), curr.end()));
@@ -116,6 +115,11 @@ namespace quantum{
     return;
   }//execute
 
+  void AssignmentErrorKernelDecorator::execute(const std::shared_ptr<AcceleratorBuffer> buffer,
+               const std::vector<std::shared_ptr<CompositeInstruction>> functions){
+
+    return;
+  }//execute (vectorized)
 
 } //namespace quantum
 } //namespace xacc
