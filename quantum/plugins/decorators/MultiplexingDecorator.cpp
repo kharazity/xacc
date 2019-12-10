@@ -27,6 +27,31 @@ namespace quantum{
     else{
       xacc::error("No layout given, must give layout");
     }
+    return;
   }
-}
-}
+
+  void MultiplexingDecorator::execute(const std::shared_ptr<AcceleratorBuffer> buffer,
+                                      const std::shared_ptr<CompositeInstruction> function){
+    std::shared_ptr<CompositeInstruction> multiplex_func;
+    return;
+  }
+
+  void MultiplexingDecorator::execute(const std::shared_ptr<AcceleratorBuffer> buffer,
+                                      const std::vector<std::shared_ptr<CompositeInstruction>> functions){
+    std::shared_ptr<AcceleratorBuffer> MultiBuffer = xacc::qalloc(2*(buffer->size()));
+
+
+    std::shared_ptr<CompositeInstruction> Multiplexed;
+    for(auto &function : functions){
+      for(auto &x:function->getInstructions()){
+        std::cout<<x<<std::endl;
+        Multiplexed->addInstruction(x);
+      }
+    }
+
+
+    return;
+  }
+
+}//quantum
+}//namespace

@@ -20,18 +20,24 @@ namespace xacc {
 namespace quantum {
   class MultiplexingDecorator : public AcceleratorDecorator {
   protected:
-    std::shared_ptr<vector<int>> layout;
+    std::shared_ptr<std::vector<int>> layout;
 
   public:
     void execute(std::shared_ptr<AcceleratorBuffer> buffer,
-                 const std::shared_ptr<CompositeInstruction function) override;
+                 const std::shared_ptr<CompositeInstruction> function) override;
+
     void execute(std::shared_ptr<AcceleratorBuffer> buffer,
                  const std::vector<std::shared_ptr<CompositeInstruction>> functions) override;
+
     void initialize(const HeterogeneousMap& params = {}) override;
 
-    const std::string name() const override {return "multiplexing"};
-    const std::string description() const override{return "Runs the same circuit on the hardware multiple times. Currently used for running multiple parameter sets of a circuit simulatenously"};
-    ~MultiplexingDecorator() override {}
+    const std::vector<std::string> configurationKeys() override {
+      return {};
+    }
+
+    const std::string name() const override {return "multiplex"; }
+    const std::string description() const override{ return "Runs two circuitss on the hardware. Needs a map to physical bits. Currently used for running multiple parameter sets of a circuit simulatenously"; }
+    ~MultiplexingDecorator() override {};
   };
 }
 }
