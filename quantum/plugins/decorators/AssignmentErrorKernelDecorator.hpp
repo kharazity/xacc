@@ -22,12 +22,12 @@ namespace quantum {
 
 class AssignmentErrorKernelDecorator : public AcceleratorDecorator {
 protected:
-  bool gen_kernel = false;
+  bool gen_kernel;
   Eigen::MatrixXd errorKernel;
 public:
 
   const std::vector<std::string> configurationKeys() override {
-      return {};
+      return {"gen-kernel"};
   }
 
   void initialize(const HeterogeneousMap& params = {}) override;

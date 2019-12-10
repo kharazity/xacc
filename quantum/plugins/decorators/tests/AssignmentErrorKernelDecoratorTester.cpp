@@ -22,19 +22,19 @@ using namespace xacc;
 
 TEST(AssignmentErrorKernelDecoratorTest, checkBasic){
 
-  xacc::Initialize();
-  xacc::external::load_external_language_plugins();
+
   xacc::set_verbose(true);
-  auto accelerator = xacc::getAccelerator("aer", {std::make_pair("shots",2048),
-                                                  std::make_pair("backend", "ibmq_johannesburg"),
-                                                  std::make_pair("readout_error", true),
-                                                  std::make_pair("gate_error", true)});
- 
-  int num_qubits = 2;
+  if (xacc::hasAccelerator("aer")){
+    auto accelerator = xacc::getAccelerator("aer", {std::make_pair("shots", 2048),
+                                                    std::make_pair("backend", "ibmq_johannesburg"),
+                                                    std::make_pair("readout_error", true),
+                                                    std::make_pair("gate_error", true),
+                                                    std::make_pair("thermal_relaxation", true)});
 
+    int num_qubits = 2;
 
-  auto compiler = xacc::getService<xacc::Compiler>("xasm");
-  xacc::qasm(R"(
+    auto compiler = xacc::getService<xacc::Compiler>("xasm");
+    xacc::qasm(R"(
 .compiler xasm
 .circuit bell
 .qbit q
@@ -43,20 +43,28 @@ CX(q[0], q[1]);
 Measure(q[0]);
 Measure(q[1]);
 )");
-  auto bell = xacc::getCompiled("bell");
-  auto buffer = xacc::qalloc(num_qubits);
-  auto decorator = xacc::getService<AcceleratorDecorator>("assignment-error-kernel");
-  decorator->initialize({std::make_pair("gen-kernel", true)});
-  decorator->setDecorated(accelerator);
-  decorator->execute(buffer, bell);
-  buffer->print();
-  xacc::external::unload_external_language_plugins();
-  xacc::Finalize();
-}
+    auto bell = xacc::getCompiled("bell");
+    auto decBuffer = xacc::qalloc(num_qubits);
+    auto decorator = xacc::getService<AcceleratorDecorator>("assignment-error-kernel");
+    decorator->initialize({std::make_pair("gen-kernel", true)});
+    decorator->setDecorated(accelerator);
+    decorator->execute(decBuffer, bell);
+    std::cout<<"DECORATED ACCELERATOR"<<std::endl;
+    decBuffer->print();
+  }
+  else{
+    std::cout<<"you do not have aer accelerator installed, please install qiskit if you wish to run this test"<<std::endl;
+  }
+
+  }
 
 int main(int argc, char **argv){
   int ret = 0;
+  xacc::Initialize();
+  xacc::external::load_external_language_plugins();
   ::testing::InitGoogleTest(&argc, argv);
   ret = RUN_ALL_TESTS();
+  xacc::external::unload_external_language_plugins();
+  xacc::Finalize();
   return ret;
 }

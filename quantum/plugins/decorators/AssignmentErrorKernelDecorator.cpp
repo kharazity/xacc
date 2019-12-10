@@ -21,26 +21,21 @@
 namespace xacc{
 namespace quantum{
   void AssignmentErrorKernelDecorator::initialize(const HeterogeneousMap& params){
-    if(params.keyExists<std::shared_ptr<bool>>("gen-kernel")){
-        gen_kernel = true;
-      }
+
+    if(params.keyExists<bool>("gen-kernel")){
+      gen_kernel = params.get<bool>("gen-kernel");
+    }
   }
   void AssignmentErrorKernelDecorator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
                                              const std::shared_ptr<CompositeInstruction> function){
-    //need to generate error kernel on same backend as buffer;
-    //Then I need to actually execute the buffer with that function to get the counts. (there is no preprocessing)
-    //I also need to figure out how to get a bool passed that will allow me to control when I compute the matrix, and if the matrix is computed, how do I save it for the next iteration?
-    //buffer->appendMeasurement()(actual number)
-    //buffer->addExtraInfo()
     int num_bits = (int)buffer->size();
+    std::vector<std::string> permutations;
     if(gen_kernel){
-      std::cout<<"put the rest of it here" << std::endl;
-      //auto counts = buffer -> getMeasurementCounts();
-      std::cout << "num_bits = " << num_bits << std::endl;
       if(decoratedAccelerator){
-        decoratedAccelerator->execute(buffer, function);
-        std::cout<<buffer->getMeasurementCounts()<<std::endl;
-        std::vector<std::string> bitstring(pow(2,num_bits));
+        //pow(2, num_bits) gets used a lot, so I figured I should just define it here
+        int pow_bits = std::pow(2, num_bits);
+        //Algorithm to iterate through all possible bitstrings for a given number of bits
+        std::vector<std::string> bitstring(pow_bits);
         std::string str = "";
         std::string curr;
         int counter = 0;
@@ -53,21 +48,29 @@ namespace quantum{
           curr = str;
           do{
             bitstring[counter] = curr;
+            //std::cout<<"curr = "<<curr <<std::endl;
             counter++;
           }
           while(next_permutation(curr.begin(), curr.end()));
 
         }
-        //using bitstring to generate circuits
+        permutations = bitstring;
+        //bitstring contains all possible bitstrings to generate circuits, there is direct
+        //mapping from bitstring to circuit as follows:
+        //bitstring: 10 => X gate on zeroth qubit and nothing on first qubit and measure both
+        //bitstring: 11 => X gate on both qubits and measure both etc...
+
         std::shared_ptr<AcceleratorBuffer> tmpBuffer = xacc::qalloc(buffer->size());
+
+        //list of circuits to evaluate
         std::vector<std::shared_ptr<CompositeInstruction>> circuits;
         auto provider = xacc::getIRProvider("quantum");
-        for(int i = 0; i < std::pow(2,num_bits); i++){
+        for(int i = 0; i < pow_bits; i++){
           auto circuit = provider->createComposite(bitstring[i]);
           int j = num_bits-1;
           for(char c : bitstring[i]){
             if(c == '1'){
-              std::cout<<"1 found at position: "<<j<<std::endl;
+              //std::cout<<"1 found at position: "<<j<<std::endl;
               auto x = provider->createInstruction("X", j);
               circuit->addInstruction(x);
             }
@@ -77,11 +80,10 @@ namespace quantum{
           auto m1 = provider->createInstruction("Measure", 1);
           circuit->addInstruction(m0);
           circuit->addInstruction(m1);
-          std::cout<<"circuit: " << bitstring[i] << std::endl;
           circuits.push_back(circuit);
         }
         decoratedAccelerator->execute(tmpBuffer, circuits);
-        std::cout<<"here"<<std::endl;
+        //std::cout<<"here"<<std::endl;
         auto buffers = tmpBuffer->getChildren();
 
         int shots = 0;
@@ -90,28 +92,42 @@ namespace quantum{
           shots += x.second;
         }
         std::cout<<"num_shots = " << shots <<std::endl;
-        //std::vector<auto> results;
+        //initializing vector of vector of counts to size 2^num_bits x 2^num_bits
+        std::vector<std::vector<int>> counts(std::pow(2, num_bits),
+                                              std::vector<int>(pow_bits));
+
+        int row = 0;
+        Eigen::MatrixXd K(pow_bits, pow_bits);
         for (auto &b: buffers){
-          //std::cout<< b->getMeasurementCounts() << std::endl;
-          //results.push_back(b->getMeasurementCounts());
-          //std::cout<<results <<std::endl;
-        }
-        //needs to be computed, or found in buffer
-        //convert results vector<vector> into Eigen Matrix object
-        Eigen::MatrixXd K = Eigen::MatrixXd::Zero(std::pow(2,num_bits), std::pow(2,num_bits));
-        for(int i = 0; i < std::pow(2,num_bits); i++){
-          for(int j = 0; j < std::pow(2,num_bits); j++){
-            std::cout<<"put results here";
+          int col = 0;
+          for(auto& x : bitstring){
+            auto temp = b->computeMeasurementProbability(x);
+            K(row, col) = temp;
+            col++;
           }
+          row++;
         }
-        //after kernel is generate set
-        //gen_kernel = false;
-        //take the Eigen Matrix and invert it:
-        //Eigen::MatrixXd Kinv = K.inverse();
-        //state = Kinv*state;
-        //update state in buffer
+        errorKernel = K.inverse();
+        std::cout<<std::endl<<errorKernel<<std::endl;
+        gen_kernel = false;
       }
+      
     }
+    //Eigen::VectorXd EM_state = errorKernel*init_state;
+
+    decoratedAccelerator->execute(buffer,function);
+    int size = std::pow(2, num_bits);
+    Eigen::VectorXd init_state(size);
+    int i = 0;
+    for(auto &x: permutations){
+      init_state(i) =buffer->computeMeasurementProbability(x);
+      i++;
+    }
+    std::cout<<"init_state: "<<std::endl;
+    std::cout<<init_state<<std::endl;
+    auto EM_state = errorKernel*init_state;
+    std::cout<<"Error Mitigated:"<<std::endl;
+    std::cout<<std::endl<<EM_state<<std::endl;
     return;
   }//execute
 
