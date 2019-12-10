@@ -18,6 +18,7 @@ file (GLOB SRC RDMPurificationDecorator.cpp
                ROErrorDecorator.cpp
                RichExtrapDecorator.cpp
 	       AssignmentErrorKernelDecorator.cpp
+	       MultiplexingDecorator.cpp
                DecoratorsActivator.cpp)
 
 # Set up dependencies to resources to track changes

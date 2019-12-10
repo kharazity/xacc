@@ -25,114 +25,162 @@ namespace quantum{
     if(params.keyExists<bool>("gen-kernel")){
       gen_kernel = params.get<bool>("gen-kernel");
     }
-  }
+  }//initialize
+
   void AssignmentErrorKernelDecorator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
                                              const std::shared_ptr<CompositeInstruction> function){
     int num_bits = (int)buffer->size();
-    std::vector<std::string> permutations;
     if(gen_kernel){
       if(decoratedAccelerator){
-        //pow(2, num_bits) gets used a lot, so I figured I should just define it here
-        int pow_bits = std::pow(2, num_bits);
-        //Algorithm to iterate through all possible bitstrings for a given number of bits
-        std::vector<std::string> bitstring(pow_bits);
-        std::string str = "";
-        std::string curr;
-        int counter = 0;
-        int j = num_bits;
-        while(j--){
-          str.push_back('0');
-        }
-        for(int k = 0; k <= num_bits; k++){
-          str[num_bits - k] = '1';
-          curr = str;
-          do{
-            bitstring[counter] = curr;
-            //std::cout<<"curr = "<<curr <<std::endl;
-            counter++;
-          }
-          while(next_permutation(curr.begin(), curr.end()));
-
-        }
-        permutations = bitstring;
-        //bitstring contains all possible bitstrings to generate circuits, there is direct
-        //mapping from bitstring to circuit as follows:
-        //bitstring: 10 => X gate on zeroth qubit and nothing on first qubit and measure both
-        //bitstring: 11 => X gate on both qubits and measure both etc...
-
-        std::shared_ptr<AcceleratorBuffer> tmpBuffer = xacc::qalloc(buffer->size());
-
-        //list of circuits to evaluate
-        std::vector<std::shared_ptr<CompositeInstruction>> circuits;
-        auto provider = xacc::getIRProvider("quantum");
-        for(int i = 0; i < pow_bits; i++){
-          auto circuit = provider->createComposite(bitstring[i]);
-          int j = num_bits-1;
-          for(char c : bitstring[i]){
-            if(c == '1'){
-              //std::cout<<"1 found at position: "<<j<<std::endl;
-              auto x = provider->createInstruction("X", j);
-              circuit->addInstruction(x);
-            }
-            j--;
-          }
-          auto m0  = provider->createInstruction("Measure", 0);
-          auto m1 = provider->createInstruction("Measure", 1);
-          circuit->addInstruction(m0);
-          circuit->addInstruction(m1);
-          circuits.push_back(circuit);
-        }
-        decoratedAccelerator->execute(tmpBuffer, circuits);
-        //std::cout<<"here"<<std::endl;
-        auto buffers = tmpBuffer->getChildren();
-
-        int shots = 0;
-        //compute num shots;
-        for(auto &x : buffers[0]->getMeasurementCounts()){
-          shots += x.second;
-        }
-        std::cout<<"num_shots = " << shots <<std::endl;
-        //initializing vector of vector of counts to size 2^num_bits x 2^num_bits
-        std::vector<std::vector<int>> counts(std::pow(2, num_bits),
-                                              std::vector<int>(pow_bits));
-
-        int row = 0;
-        Eigen::MatrixXd K(pow_bits, pow_bits);
-        for (auto &b: buffers){
-          int col = 0;
-          for(auto& x : bitstring){
-            auto temp = b->computeMeasurementProbability(x);
-            K(row, col) = temp;
-            col++;
-          }
-          row++;
-        }
-        errorKernel = K.inverse();
-        std::cout<<std::endl<<errorKernel<<std::endl;
-        gen_kernel = false;
+        //kernel is protected member, and is updated in function, no return value required.
+        generateKernel(buffer);
       }
-      
-    }
-    //Eigen::VectorXd EM_state = errorKernel*init_state;
 
-    decoratedAccelerator->execute(buffer,function);
+    }
+    else{
+      //generating the list of permutations is O(2^num_bits), we want to minimize the number of times we have to call it.
+      if(permutations.empty()){
+        permutations = generatePermutations(num_bits);
+      }
+    }
+    //get the raw state
+    decoratedAccelerator->execute(buffer, function);
+    int shots = 0;
+    for(auto &x : buffer->getMeasurementCounts()){
+      shots += x.second;
+    }
     int size = std::pow(2, num_bits);
     Eigen::VectorXd init_state(size);
     int i = 0;
     for(auto &x: permutations){
-      init_state(i) =buffer->computeMeasurementProbability(x);
+      init_state(i) = buffer->computeMeasurementProbability(x);
       i++;
     }
-    std::cout<<"init_state: "<<std::endl;
-    std::cout<<init_state<<std::endl;
-    auto EM_state = errorKernel*init_state;
+    std::cout<<"unmitigated_state: "<<std::endl;
+    std::cout<<init_state<<std::endl<<std::endl;
+    Eigen::VectorXd EM_state = errorKernel*init_state;
     std::cout<<"Error Mitigated:"<<std::endl;
-    std::cout<<std::endl<<EM_state<<std::endl;
+    std::cout<<EM_state<<std::endl<<"\n";
+    //checking for negative values and performing a "clip and renorm"
+    for(int i = 0; i < EM_state.size(); i++){
+      if(EM_state(i) < 0.0){
+        int count = floor(shots*EM_state(i)+0.5);
+        //std::cout<<count<<std::endl;
+        std::cout<<"found negative value, clipping and renorming"<<std::endl;
+        std::cout<<"removed "<<abs(count)<<" shots from total shots"<<std::endl;
+        shots += count;
+        EM_state(i) = 0.0;
+      }
+    }
+
+    std::cout<<"Updated EM_state:"<<std::endl<<EM_state<<std::endl;
+    //update buffer with new counts and save original counts to extra info
+
+    std::map<std::string, double> origCounts;
+
+    int total = 0;
+    i = 0;
+    for(auto &x: permutations){
+      origCounts[x] = (double) buffer->getMeasurementCounts()[x];
+      int count = floor(shots*EM_state(i)+0.5);
+      total += count;
+      buffer->appendMeasurement(x, count);
+      i++;
+    }
+    //std::cout<<origCounts<<std::endl;
+    buffer->addExtraInfo("unmitigated-counts", origCounts);
+
     return;
   }//execute
 
+
+
   void AssignmentErrorKernelDecorator::execute(const std::shared_ptr<AcceleratorBuffer> buffer,
                const std::vector<std::shared_ptr<CompositeInstruction>> functions){
+    int num_bits = buffer->size();
+    if(gen_kernel){
+      if(decoratedAccelerator){
+        generateKernel(buffer);
+      }
+    }
+    else{
+      if(permutations.empty()){
+        permutations = generatePermutations(num_bits);
+      }
+    }
+    //get the raw states
+    decoratedAccelerator->execute(buffer, functions);
+    int size = std::pow(2, num_bits);
+
+    std::vector<Eigen::VectorXd> init_states;
+    //compute number of shots;
+    auto buffers = buffer->getChildren();
+    int shots = 0;
+    for(auto &x : buffers[0]->getMeasurementCounts()){
+      shots += x.second;
+    }
+    std::cout<<"shots = "<<shots<<std::endl;
+
+
+    int i = 0;
+    for(auto &b: buffers){
+      Eigen::VectorXd temp(size);
+      int j = 0;
+      for(auto&x: permutations){
+        std::cout<<b->computeMeasurementProbability(x)<<std::endl;
+        temp(j) = b->computeMeasurementProbability(x);
+        j++;
+      }
+      std::cout<<"seg fault right here "<<std::endl;
+      init_states.push_back(temp);
+    }
+    std::cout<<"unmitigated states: "<<std::endl;
+    std::vector<Eigen::VectorXd> EM_states;
+    i = 0;
+    for(auto &x : init_states){
+      std::cout<<x<<std::endl<<std::endl;
+      EM_states.push_back(errorKernel*x);
+      i++;
+    }
+    std::cout<<"mitigated states: "<<std::endl;
+    for(auto &x: EM_states){
+      std::cout<<x<<std::endl<<std::endl;
+    }
+    for(int i = 0; i < EM_states.size(); i++){
+      for(int j = 0; j<EM_states[i].size(); j++){
+        if(EM_states[i](j) < 0.0){
+          int count = floor(shots*EM_states[i](j)+0.5);
+          std::cout<<"found negative value, clipping and renorming "<<std::endl;
+          std::cout<<"removed "<<abs(count)<<" shots from total shots"<<std::endl;
+          shots += count;
+          EM_states[i](j) = 0.0;
+        }
+      }
+    }
+
+    std::cout<<"Update EM_states: "<<std::endl;
+    for(auto &x: EM_states){
+      std::cout<<x<<std::endl<<std::endl;
+    }
+
+    std::vector<std::map<std::string, double>> origCounts(buffer->nChildren());
+
+    int total = 0;
+    i = 0;
+    for(auto &b: buffers){
+      int j = 0;
+      for(auto &x: permutations){
+        origCounts[i][x] = (double) b->getMeasurementCounts()[x];
+        int count = floor(shots*EM_states[i](j)+0.5);
+        j++;
+        total += count;
+        b->appendMeasurement(x, count);
+        b->addExtraInfo("unmitigated-counts", origCounts[i]);
+      }
+      i++;
+    }
+
+
 
     return;
   }//execute (vectorized)
