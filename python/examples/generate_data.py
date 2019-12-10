@@ -4,6 +4,7 @@ import argparse
 import glob
 import numpy as np
 import re
+import csv
 from targets import target_dict
 from parseQASM import parseQASM
 from data_process import processFile
@@ -30,7 +31,7 @@ def getListOfDirs(dir_name):
 
 def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss ='mmd', initial_parameters = [], step_size = .1, max_iter = 40, noisy = False, backend = "ibmq_johannesburg"):
     #print("qasm_file = ", qasm_file)
-    #Non-noisy accelerator:
+    #Non-noisy accelerator:las
     if args.v:
         xacc.set_verbose(True)
 
@@ -124,19 +125,30 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
     buffer = xacc.loadBuffer(open(ab_file,'r').read())
     parameters = buffer.getAllUnique('parameters')
     last_param = parameters[-1]
+    data = {}
+    data[ab_file.replace(".ab","")]= last_param;
     ddcl = xacc.getAlgorithm('ddcl', ddcl_dict)
     qbits = xacc.qalloc(num_bits)
     noisy_ab_file = os.path.dirname(ab_file) +"/noisy_" + os.path.basename(ab_file)
     print("noisy_ab_file = ", noisy_ab_file)
+    print("noiseless = ", last_param)
+   
     if noisy:
         noisy_buffer = xacc.loadBuffer(open(noisy_ab_file, 'r').read())
         noisy_parameters = buffer.getAllUnique('parameters')
+        data[noisy_ab_file.replace(".ab","")]=noisy_parameters[-1];
+        print("Noisy = ", noisy_parameters[-1])
         noisy_last_param = noisy_parameters[-1]
         noisy_ddcl_dict = ddcl_dict.copy()
         noisy_ddcl_dict['accelerator'] = ''
 
 
+    with open("/Users/6tk/Desktop/qasm_dir/final_params.csv", 'a') as outfile:
+        w = csv.DictWriter(outfile, data.keys());
+        w.writeheader()
+        w.writerow(data);
 
+    print("last parameters written to .json file")
     vals = np.linspace(-np.pi, np.pi, num = 200)
 
     if noisy:
