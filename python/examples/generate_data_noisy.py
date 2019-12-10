@@ -36,4 +36,5 @@ def generateNoisyPlots(noisy_last_param, aer_dict, noisy_ddcl_dict, num_bits):
     return noisy_loss
 
 
-def loadJSON(filepath)
+def loadJSON(filepath):
+    return

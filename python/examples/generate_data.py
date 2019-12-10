@@ -4,11 +4,15 @@ import argparse
 import glob
 import numpy as np
 import re
+<<<<<<< HEAD
 import csv
+=======
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
 from targets import target_dict
 from parseQASM import parseQASM
 from data_process import processFile
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 import multiprocessing
 from multiprocessing import pool
 from generate_data_noisy import runNoisyCircuit, generateNoisyPlots
@@ -18,6 +22,11 @@ import json
 
 def getListOfDirs(dir_name):
     #print("dir_name = ", dir_name)
+=======
+
+
+def getListOfDirs(dir_name):
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
     file_list = os.listdir(dir_name)
     all_dirs = list()
     for file in file_list:
@@ -25,6 +34,7 @@ def getListOfDirs(dir_name):
         if os.path.isdir(full_path):
             all_dirs.append(full_path)
             all_dirs = all_dirs + getListOfDirs(full_path)
+<<<<<<< HEAD
     #print(all_dirs)
     return all_dirs
 
@@ -40,6 +50,17 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
     qbits = xacc.qalloc(num_bits)
 
     #generate the circuit to be optimized
+=======
+    print(all_dirs)
+    return all_dirs
+
+
+
+
+def runCircuit(qasm_file, num_bits, num_shots = 2048, target = target_dict, loss ='mmd', initial_parameters = [], step_size = .1, max_iter = 40):
+    qbits = xacc.qalloc(num_bits)
+    qpu = xacc.getAccelerator('local-ibm', {'shots': num_shots})
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
     qasm_txt = open(qasm_file, 'r').read()
     crct = qasm_file.replace('.qasm', '')
     xacc.qasm('''
@@ -48,6 +69,7 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
     .parameters x
     .qbit q
     {}'''.format(crct, qasm_txt))
+<<<<<<< HEAD
     f = xacc.getCompiled(crct) #ansatz
 
     targets = target[num_bits]
@@ -61,6 +83,18 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
         noisy_ab_file = "noisy_"+ab_file
         loss_dir = base_path + "/%s"%(loss)
         #generate appropriate sub-directories
+=======
+    f = xacc.getCompiled(crct)
+    optimizer_dict =  {'mlpack-step-size': step_size, 'mlpack-max-iter': max_iter,  'initial-parameters': initial_parameters}
+    optimizer = xacc.getOptimizer('mlpack', optimizer_dict)
+    targets = target[num_bits]
+
+    base_path = os.getcwd()
+    print("base_path = ", base_path)
+    for target in targets.values():
+        ab_file = qasm_file.replace('.qasm','.ab')
+        loss_dir = base_path + "/%s"%(loss)
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
         if os.path.exists(loss_dir):
             os.chdir(loss_dir)
         else:
@@ -73,11 +107,28 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
             os.mkdir(target_dir)
             os.chdir(target_dir)
         data_dir = target_dir + "/data"
+<<<<<<< HEAD
+=======
+        print("Calculating for target: ", target)
+        strategy = loss+'-parameter-shift'
+        ddcl_dict = {'ansatz': f,
+                          'accelerator': qpu,
+                          'target_dist': target,
+                          'persist-buffer': True,
+                          'optimizer': optimizer,
+                          'loss': loss,
+                          'gradient': strategy }
+
+        ddcl = xacc.getAlgorithm('ddcl', ddcl_dict)
+        ddcl.execute(qbits)
+
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
         if os.path.exists(data_dir):
             os.chdir(data_dir)
         else:
             os.mkdir(data_dir)
             os.chdir(data_dir)
+<<<<<<< HEAD
         print("Calculating for target: ", target)
         strategy = loss+'-parameter-shift'
         ddcl_dict = {'ansatz': f,
@@ -191,10 +242,62 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
             plt.plot(vals, y_noisy, label = "noisy")
 
         plt.legend()
+=======
+
+        ab_file = data_dir + "/" + qasm_file.replace(".qasm", ".ab")
+        print("ab_file = ", ab_file)
+        IO = open(ab_file, 'w')
+        IO.write(str(qbits))
+        IO.close()
+
+        print("FILE written to: ", os.path.abspath(ab_file))
+
+        processFile(ab_file, loss)
+
+        print("CD = ", os.getcwd())
+
+        optimizer_dict['maxiter'] = 1
+        optimizer = xacc.getOptimizer('mlpack', optimizer_dict)
+        ddcl = xacc.getAlgorithm('ddcl', ddcl_dict)
+
+        print("GENERATING PLOTS")
+        generatePerturbationPlots(ab_file, ddcl, qbits)
+        os.chdir(target_dir+"/../")
+    del f
+
+
+def generatePerturbationPlots(ab_file, ddcl, qbits):
+    print("This is where we think we're at", os.getcwd())
+    #/Users/6tk/Desktop/Examples1/1qbit/xacc_1qubit_basic/mmd/target
+    print(ab_file)
+    buffer = xacc.loadBuffer(open(ab_file,'r').read())
+    parameters = buffer.getAllUnique('parameters')
+    last_param = parameters[-1]
+    loss = []
+    dir_name = ab_file.replace(".ab", "")
+    vals = np.linspace(-np.pi, np.pi, num = 200)
+    for i in range(len(last_param)):
+        loss_dict = {}
+        count = 0
+        for x in vals:
+            last_param_ = last_param
+            last_param_[i] += x
+            loss_dict[count] = ddcl.execute(qbits, last_param_)[0]
+            count +=1
+        loss.append(loss_dict)
+    fig, ax = plt.subplots()
+    count = 0
+    for val in loss:
+        lists = sorted(val.items())
+        x, y = zip(*lists)
+        vals = np.add(vals, x)
+        plt.plot(vals,y)
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
         plt.title("%s Direction %s"%(ab_file, count))
         plt.xlabel("parameter")
         plt.ylabel("loss")
         current_directory = os.path.dirname(os.path.abspath(ab_file))
+<<<<<<< HEAD
         paths_dir =os.path.join(current_directory, "plots")
 
         if os.path.exists(paths_dir):
@@ -212,6 +315,22 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
             plot_dir = ab_file.replace(".ab", "_perturbed_dir%s.png"%(count))
             if noisy:
                 plot_dir = noisy_ab_file.replace(".ab", "_noisy_perturbed_dir%s.png"%(count))
+=======
+        print("current_directory = ", current_directory)
+        paths_dir =os.path.join(current_directory, "plots")
+        print("CURRENT DIR = ", current_directory)
+        print("PATH = ", paths_dir)
+        if os.path.exists(paths_dir):
+            os.chdir(paths_dir)
+            plot_dir = ab_file.replace(".ab", "_perturbed_dir%s.png"%(count))
+            filename = os.path.join(os.getcwd(), plot_dir)
+            plt.savefig(filename, dpi = 400)
+        else:
+            print(paths_dir)
+            os.mkdir(paths_dir)
+            os.chdir(paths_dir)
+            plot_dir = ab_file.replace(".ab", "_perturbed_dir%s.png"%(count))
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
             filename = os.path.join(os.getcwd(), plot_dir)
             plt.savefig(filename, dpi = 400)
         plt.close()
@@ -222,12 +341,22 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
 
 
 
+<<<<<<< HEAD
+=======
+def perturbFromTrained(params):
+    return
+
+
+
+
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
 
 parser = argparse.ArgumentParser(description = 'options for perturbing initial parameters and overwriting files')
 
 parser.add_argument('--perturb', help = "perturb initial parameters by random vector", action = "store_true")
 parser.add_argument('--overwrite', help = "overwrite saved plots", action = "store_true")
 parser.add_argument('--hardware', help = "specify which hardware to use")
+<<<<<<< HEAD
 parser.add_argument('--shots', help = "nshots to run on your experiment, default is 8192", action = "store")
 parser.add_argument('--dir', help = "pass a qasm file or directory of qasm files to process, otherwise recursively search through all sub directories for .qasm files", action = "store")
 parser.add_argument('--loss', help ="Pass either 'mmd' or 'js' for js or mmd losses respectively", action = "store")
@@ -240,6 +369,14 @@ parser.add_argument("--plot", help = "pass plot if you want to plot the data", a
 parser.add_argument("-v", help = "verbose output of ddcl iterations", action = "store_true")
 args = parser.parse_args()
 nshots = 8192
+=======
+parser.add_argument('--shots', help = "nshots to run on your experiment, default is 2048")
+parser.add_argument('--dir', help = "pass a qasm file or directory of qasm files to process, otherwise recursively search through all sub directories for .qasm files", action = "store")
+parser.add_argument('--loss', help ="Pass either 'mmd' or 'js' for js or mmd losses respectively")
+args = parser.parse_args()
+
+nshots = 2048
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
 if args.shots:
     nshots = args.shots
 perturb = 0
@@ -261,6 +398,7 @@ else:
 
 
 
+<<<<<<< HEAD
 def execute():
     GLOBAL_ROOT = os.getcwd()
     if args.dir:
@@ -276,6 +414,18 @@ def execute():
             #print("CURRENTLY IN DIR", args.dir)
             files = glob.glob("*.qasm")
             #print("FILES = ", files)
+=======
+
+
+def execute():
+    GLOBAL_ROOT = os.getcwd()
+    if args.dir:
+        for dir in directories:
+            os.chdir(dir)
+            print("CURRENTLY IN DIR", args.dir)
+            files = glob.glob("*.qasm")
+            print("FILES = ", files)
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
             for file in files:
                 if file.startswith("preprocessed"):
                     print("ignoring file: ", file)
@@ -284,7 +434,11 @@ def execute():
                     print("ignoring file:", file)
                     continue
                 else:
+<<<<<<< HEAD
                     #print("process file: ", file)
+=======
+                    print("process file: ", file)
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
                     start_params, filename, nbits = parseQASM(file)
 
                 if perturb:
@@ -295,6 +449,7 @@ def execute():
                 else:
                     print("filename = ", filename)
                     print("running file %s"%(filename))
+<<<<<<< HEAD
                     if args.backend:
                         runCircuit(filename, nbits, initial_parameters = start_params,\
                                              loss = args.loss, noisy = args.noisy,\
@@ -304,6 +459,12 @@ def execute():
                                              loss = args.loss, noisy = args.noisy)
                     os.chdir(GLOBAL_ROOT)
 
+=======
+                    circuit = runCircuit(filename, nbits, initial_parameters = start_params, loss = "js")
+                    os.chdir(GLOBAL_ROOT)
+
+
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
     else:
         for dir in directories:
             os.chdir(dir)
@@ -328,7 +489,11 @@ def execute():
                 else:
                     print("filename = ", filename)
                     print("running file %s"%(filename))
+<<<<<<< HEAD
                     circuit = runCircuit(filename, nbits, initial_parameters = start_params, noisy = True)
+=======
+                    circuit = runCircuit(filename, nbits, initial_parameters = start_params)
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
                 os.chdir(GLOBAL_ROOT)
 
         for dir in directories:

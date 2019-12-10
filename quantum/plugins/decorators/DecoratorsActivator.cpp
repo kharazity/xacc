@@ -15,6 +15,7 @@
 #include "ROErrorDecorator.hpp"
 #include "RichExtrapDecorator.hpp"
 #include "AssignmentErrorKernelDecorator.hpp"
+#include "MultiplexingDecorator.hpp"
 
 #include "cppmicroservices/BundleActivator.h"
 #include "cppmicroservices/BundleContext.h"
@@ -44,6 +45,7 @@ public:
 		auto c3 = std::make_shared<xacc::quantum::ROErrorDecorator>();
 		auto c4 = std::make_shared<xacc::quantum::RDMPurificationDecorator>();
     auto c5 = std::make_shared<xacc::quantum::AssignmentErrorKernelDecorator>();
+    auto c6 = std::make_shared<xacc::quantum::MultiplexingDecorator>();
 
 		context.RegisterService<xacc::AcceleratorDecorator>(c2);
         context.RegisterService<xacc::Accelerator>(c2);
@@ -59,6 +61,9 @@ public:
 
         context.RegisterService<xacc::AcceleratorDecorator>(c5);
         context.RegisterService<xacc::Accelerator>(c5);
+
+        context.RegisterService<xacc::AcceleratorDecorator>(c6);
+        context.RegisterService<xacc::Accelerator>(c6);
 
 	}
 

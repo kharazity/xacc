@@ -114,7 +114,11 @@ public:
       basis[i] = i;
     }
 
+<<<<<<< HEAD
     std::vector<double> sigma_list = {0.25};
+=======
+    std::vector<double> sigma_list = {0.2};
+>>>>>>> edc9c7b6f23bf83c4fcc58baefec9d952a5f6cb7
     Eigen::MatrixXd K = mix_rbf_kernel(basis, basis, sigma_list, num_bit);
     auto mmd = kernel_expect(K, pxy, pxy);
 
