@@ -41,4 +41,11 @@
 **/.ipynb_checkpoints
 compile_commands.json
 /docs/doxygen/html**
+
 **/*.dat
+
+# mac stuff
+*.DS_Store
+#emacs stuff
+.\#*
+
