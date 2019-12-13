@@ -110,6 +110,22 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
         IO.write(str(qbits))
         processFile(ab_file, loss)
 
+
+        data = {}
+        buffer = xacc.loadBuffer(open(ab_file, 'r').read())
+        last_param = buffer.getAllUnique('parameters')[-1]
+        data[ab_file.replace("/Users/6tk/Desktop/qasm_dir/", "").replace(".ab", "")] = last_param;
+
+        if noisy:
+            noisy_buffer =xacc.loadBUffer(open(noisy_ab_file, 'r'))
+            noisy_last_param = noisy_buffer.getAllUnique('paramters')[-1]
+            data[noisy_ab_file.replace("/Users/6tk/Desktop/qasm_dir/", "NOISE").replace(".ab", "")] = noisy_last_param
+
+        with open("/Users/6tk/Desktop/qasm_dir/final_params.csv", 'a') as outfile:
+            w = csv.DictWriter(outfile, data.keys());
+            w.writeheader()
+            w.writerow(data);
+
         optimizer_dict['mlpack-max-iter'] = 1
         optimizer = xacc.getOptimizer('mlpack', optimizer_dict)
 
@@ -135,7 +151,7 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
    
     if noisy:
         noisy_buffer = xacc.loadBuffer(open(noisy_ab_file, 'r').read())
-        noisy_parameters = buffer.getAllUnique('parameters')
+        noisy_parameters = noisy_buffer.getAllUnique('parameters')
         data[noisy_ab_file.replace(".ab","")]=noisy_parameters[-1];
         print("Noisy = ", noisy_parameters[-1])
         noisy_last_param = noisy_parameters[-1]
@@ -143,10 +159,7 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
         noisy_ddcl_dict['accelerator'] = ''
 
 
-    with open("/Users/6tk/Desktop/qasm_dir/final_params.csv", 'a') as outfile:
-        w = csv.DictWriter(outfile, data.keys());
-        w.writeheader()
-        w.writerow(data);
+
 
     print("last parameters written to .json file")
     vals = np.linspace(-np.pi, np.pi, num = 200)
