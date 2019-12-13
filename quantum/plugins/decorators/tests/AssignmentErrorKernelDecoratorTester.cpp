@@ -112,22 +112,12 @@ TEST(AssignmentErrorKernelDecoratorTest, checkLayout) {
     auto compiler = xacc::getService<xacc::Compiler>("xasm");
     xacc::qasm(R"(
 .compiler xasm
-.circuit hadamard
+.circuit hadamard1
 .qbit q
 H(q[1]);
 Measure(q[0]);
 Measure(q[1]);
 )");
-    xacc::qasm(R"(
-.compiler xasm
-.circuit bell1
-.qbit q
-H(q[1]);
-CX(q[1], q[0]);
-Measure(q[0]);
-Measure(q[1]);
-)");
-
     auto hadamard = xacc::getCompiled("hadamard1");
     std::shared_ptr<CompositeInstruction> circuit = hadamard;
     auto buffer = xacc::qalloc(num_qbits);
@@ -135,7 +125,7 @@ Measure(q[1]);
         xacc::getService<AcceleratorDecorator>("assignment-error-kernel");
     decorator->initialize({std::make_pair("gen-kernel", true), std::make_pair("layout", std::vector<std::size_t> {6,7})});
     decorator->setDecorated(accelerator);
-    decorator->execute(buffer, circuits);
+    decorator->execute(buffer, circuit);
     buffer->print();
   }
 }

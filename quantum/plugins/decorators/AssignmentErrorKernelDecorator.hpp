@@ -78,11 +78,13 @@ protected:
         j++;
       }
       for(int i = 0; i<num_bits; i++){
-        circuit->addInstruction(provider->creatInstruction("Measure", i));
+        circuit->addInstruction(provider->createInstruction("Measure", i));
       }
+      
       if(!layout.empty()){
+        std::cout<<"LAYOUT FOUND"<<std::endl;
         circuit->mapBits(layout);
-        std::cout<<"running on layout: "<<layout[0] <<" and "< layout[1]<<std::endl;
+        std::cout<<"running on layout: "<<layout[0] <<" and "<< layout[1]<<std::endl;
       }
       circuits.push_back(circuit);
     }

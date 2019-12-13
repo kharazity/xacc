@@ -106,10 +106,9 @@ QObjectCompiler::translate(std::shared_ptr<xacc::CompositeInstruction> function)
   qobj.set_header(QObjectHeader());
   std::vector<xacc::ibm::Experiment> experiments;
 
-  auto uniqueBits = function->uniqueBits();
-
+  auto physicalBits = function->nPhysicalBits();
   auto visitor =
-      std::make_shared<QObjectExperimentVisitor>(function->name(), uniqueBits.size());
+    std::make_shared<QObjectExperimentVisitor>(function->name(), physicalBits);
 
   InstructionIterator it(function);
   int memSlots = 0;

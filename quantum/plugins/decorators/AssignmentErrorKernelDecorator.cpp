@@ -23,8 +23,14 @@ namespace quantum {
 void AssignmentErrorKernelDecorator::initialize(
     const HeterogeneousMap &params) {
 
-  if (params.keyExists<bool>("gen-kernel")) {
+  if(params.keyExists<bool>("gen-kernel")) {
     gen_kernel = params.get<bool>("gen-kernel");
+  }
+  if(params.keyExists<std::vector<std::size_t>>("layout")){
+    layout = params.get<std::vector<std::size_t>>("layout");
+  }
+  if(params.keyExists<bool>("multiplex")){
+    multiplex = params.get<bool>("multiplex");
   }
 } // initialize
 
