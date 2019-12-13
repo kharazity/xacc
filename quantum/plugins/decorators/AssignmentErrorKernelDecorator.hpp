@@ -25,6 +25,9 @@ class AssignmentErrorKernelDecorator : public AcceleratorDecorator {
 protected:
   bool gen_kernel;
   Eigen::MatrixXd errorKernel;
+  std::vector<std::size_t> layout;
+  bool multiplex;
+
   std::vector<std::string> permutations = {""};
   std::vector<std::string> generatePermutations(int num_bits) {
     int pow_bits = std::pow(2, num_bits);
@@ -65,19 +68,22 @@ protected:
     auto provider = xacc::getIRProvider("quantum");
     for (int i = 0; i < pow_bits; i++) {
       auto circuit = provider->createComposite(permutations[i]);
-      int j = num_bits - 1;
+      int j = 0;
       for (char c : permutations[i]) {
         if (c == '1') {
           // std::cout<<"1 found at position: "<<j<<std::endl;
           auto x = provider->createInstruction("X", j);
           circuit->addInstruction(x);
         }
-        j--;
+        j++;
       }
-      auto m0 = provider->createInstruction("Measure", 0);
-      auto m1 = provider->createInstruction("Measure", 1);
-      circuit->addInstruction(m0);
-      circuit->addInstruction(m1);
+      for(int i = 0; i<num_bits; i++){
+        circuit->addInstruction(provider->creatInstruction("Measure", i));
+      }
+      if(!layout.empty()){
+        circuit->mapBits(layout);
+        std::cout<<"running on layout: "<<layout[0] <<" and "< layout[1]<<std::endl;
+      }
       circuits.push_back(circuit);
     }
     decoratedAccelerator->execute(tmpBuffer, circuits);

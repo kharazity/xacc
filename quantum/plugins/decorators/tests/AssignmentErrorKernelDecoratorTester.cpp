@@ -99,6 +99,47 @@ Measure(q[1]);
   }
 }
 
+TEST(AssignmentErrorKernelDecoratorTest, checkLayout) {
+  xacc::set_verbose(true);
+  if (xacc::hasAccelerator("aer")) {
+    auto accelerator = xacc::getAccelerator(
+        "aer", {std::make_pair("shots", 2048),
+                std::make_pair("backend", "ibmq_tokyo"),
+                std::make_pair("readout_error", true),
+                std::make_pair("gate_error", true),
+                std::make_pair("thermal_relaxation", true)});
+    int num_qbits = 2;
+    auto compiler = xacc::getService<xacc::Compiler>("xasm");
+    xacc::qasm(R"(
+.compiler xasm
+.circuit hadamard
+.qbit q
+H(q[1]);
+Measure(q[0]);
+Measure(q[1]);
+)");
+    xacc::qasm(R"(
+.compiler xasm
+.circuit bell1
+.qbit q
+H(q[1]);
+CX(q[1], q[0]);
+Measure(q[0]);
+Measure(q[1]);
+)");
+
+    auto hadamard = xacc::getCompiled("hadamard1");
+    std::shared_ptr<CompositeInstruction> circuit = hadamard;
+    auto buffer = xacc::qalloc(num_qbits);
+    auto decorator =
+        xacc::getService<AcceleratorDecorator>("assignment-error-kernel");
+    decorator->initialize({std::make_pair("gen-kernel", true), std::make_pair("layout", std::vector<std::size_t> {6,7})});
+    decorator->setDecorated(accelerator);
+    decorator->execute(buffer, circuits);
+    buffer->print();
+  }
+}
+
 int main(int argc, char **argv) {
   int ret = 0;
   xacc::Initialize();
