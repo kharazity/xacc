@@ -90,20 +90,6 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
         #full path to (data) ab_file
         ab_file = data_dir + "/" + qasm_file.replace(".qasm", ".ab")
 
-        ddcl_noisy = None
-        if noisy:
-            print("NOISY PROCESSING")
-            noisy_ddcl_dict = ddcl_dict.copy()
-            noisy_ddcl_dict['accelerator'] = ''
-            aer_dict = {'shots': num_shots,\
-                        'backend': backend,\
-                        'gate_error': True,\
-                        'readout_error': True,\
-                        'thermal_relaxation': False}
-            noisy_ab_file = os.path.dirname(ab_file)+"/" +noisy_ab_file
-            #generates abfile for noisy processing later
-            runNoisyCircuit(num_bits, noisy_ddcl_dict, aer_dict, noisy_ab_file)
-
         ddcl = xacc.getAlgorithm('ddcl', ddcl_dict)
         ddcl.execute(qbits)
         IO = open(ab_file, 'w')
@@ -115,11 +101,6 @@ def runCircuit(qasm_file, num_bits, num_shots = 8192, target = target_dict, loss
         buffer = xacc.loadBuffer(open(ab_file, 'r').read())
         last_param = buffer.getAllUnique('parameters')[-1]
         data[ab_file.replace("/Users/6tk/Desktop/qasm_dir/", "").replace(".ab", "")] = last_param;
-
-        if noisy:
-            noisy_buffer =xacc.loadBUffer(open(noisy_ab_file, 'r'))
-            noisy_last_param = noisy_buffer.getAllUnique('paramters')[-1]
-            data[noisy_ab_file.replace("/Users/6tk/Desktop/qasm_dir/", "NOISE").replace(".ab", "")] = noisy_last_param
 
         with open("/Users/6tk/Desktop/qasm_dir/final_params.csv", 'a') as outfile:
             w = csv.DictWriter(outfile, data.keys());
@@ -141,22 +122,12 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
     buffer = xacc.loadBuffer(open(ab_file,'r').read())
     parameters = buffer.getAllUnique('parameters')
     last_param = parameters[-1]
-    data = {}
-    data[ab_file.replace(".ab","")]= last_param;
+
     ddcl = xacc.getAlgorithm('ddcl', ddcl_dict)
     qbits = xacc.qalloc(num_bits)
     noisy_ab_file = os.path.dirname(ab_file) +"/noisy_" + os.path.basename(ab_file)
-    print("noisy_ab_file = ", noisy_ab_file)
-    print("noiseless = ", last_param)
-   
-    if noisy:
-        noisy_buffer = xacc.loadBuffer(open(noisy_ab_file, 'r').read())
-        noisy_parameters = noisy_buffer.getAllUnique('parameters')
-        data[noisy_ab_file.replace(".ab","")]=noisy_parameters[-1];
-        print("Noisy = ", noisy_parameters[-1])
-        noisy_last_param = noisy_parameters[-1]
-        noisy_ddcl_dict = ddcl_dict.copy()
-        noisy_ddcl_dict['accelerator'] = ''
+    noisy_ddcl_dict = ddcl_dict.copy()
+    noisy_ddcl_dict['accelerator'] = ''
 
 
 
@@ -236,22 +207,7 @@ def generatePerturbationPlots(ab_file, ddcl_dict, qbits, noisy, num_bits, aer_di
 
 
 
-parser = argparse.ArgumentParser(description = 'options for perturbing initial parameters and overwriting files')
 
-parser.add_argument('--perturb', help = "perturb initial parameters by random vector", action = "store_true")
-parser.add_argument('--overwrite', help = "overwrite saved plots", action = "store_true")
-parser.add_argument('--hardware', help = "specify which hardware to use")
-parser.add_argument('--shots', help = "nshots to run on your experiment, default is 8192", action = "store")
-parser.add_argument('--dir', help = "pass a qasm file or directory of qasm files to process, otherwise recursively search through all sub directories for .qasm files", action = "store")
-parser.add_argument('--loss', help ="Pass either 'mmd' or 'js' for js or mmd losses respectively", action = "store")
-parser.add_argument('--noisy', help = "Pass noisy if you wish to use noisy simulation", action = "store_true")
-parser.add_argument('--rigetti', help = "Pass if you wish to run on Rigetti")
-parser.add_argument('--backend', help = "Pass string of IBM backend you wish to use. Default is 'ibmq_qasm_simulator' ", action = "store")
-
-parser.add_argument("--plot", help = "pass plot if you want to plot the data", action = "store_true")
-
-parser.add_argument("-v", help = "verbose output of ddcl iterations", action = "store_true")
-args = parser.parse_args()
 nshots = 8192
 if args.shots:
     nshots = args.shots
@@ -277,11 +233,6 @@ else:
 def execute():
     GLOBAL_ROOT = os.getcwd()
     if args.dir:
-        #I think this is the best place to start multiprocessing, I can spawn a new
-        #worker to work on each file for the number of logical cores the system this is
-        #running on has. I could do something like:
-        #also getting set up on cades would be really primo for this, since I only have four
-        #cores to run on locally.
         num_cores = multiprocessing.cpu_count() - 1
 
         for dir in directories:

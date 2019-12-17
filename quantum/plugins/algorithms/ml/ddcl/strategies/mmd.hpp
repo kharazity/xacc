@@ -8,8 +8,23 @@
  *License is available at https://eclipse.org/org/documents/edl-v10.php
  *
  * Contributors:
+ *   Tyler Kharazi
  *   Alexander J. McCaskey - initial API and implementation
  *******************************************************************************/
+/*
+Implementation details were influenced by Liu and Wang:
+https://arxiv.org/abs/1804.04168
+and
+https://github.com/GiggleLiu/QuantumCircuitBornMachine
+ref:
+@article{Liu2018,
+author = {Jin-Guo Liu and Lei Wang},
+title = {Differentiable Learning of Quantum Circuit Born Machine},
+year = {2018},
+eprint = {arXiv:1804.04168},
+url = {https://arxiv.org/abs/1804.04168}
+}
+ */
 #ifndef XACC_ALGORITHM_DDCL_STRATEGIES_MMD_LOSS_HPP_
 #define XACC_ALGORITHM_DDCL_STRATEGIES_MMD_LOSS_HPP_
 
@@ -102,11 +117,6 @@ public:
         pxy[i] = std::abs(target[i] - q[i]);
       }
 
-
-    //worried about edge cases, anywhere in here where I can access this information
-    //without type instability
-    ///Also how can I allow sigma_list to be passed as parameters into the
-    //loss?
     int num_bit = (int)log2(target.size());
 
     std::vector<int> basis(pow(2,num_bit));
@@ -114,7 +124,7 @@ public:
       basis[i] = i;
     }
 
-    std::vector<double> sigma_list = {0.25};
+    std::vector<double> sigma_list = {0.1};
     Eigen::MatrixXd K = mix_rbf_kernel(basis, basis, sigma_list, num_bit);
     auto mmd = kernel_expect(K, pxy, pxy);
 
