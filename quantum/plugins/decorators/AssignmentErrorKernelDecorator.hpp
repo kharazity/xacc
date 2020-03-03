@@ -31,7 +31,7 @@ protected:
   bool gen_mult_kernels;
 
   std::string toBinary(int num, int num_bits){
-    std::string s = std::bitset<64> (num).to_string();
+    std::string s = std::bitset<64>(num).to_string();
     std::string bitstring = "";
     for (int i = 0; i < num_bits; i++){
       bitstring += s[64-num_bits+i];
