@@ -118,6 +118,7 @@ void bind_ir(py::module &m) {
       .def("mapBits", &xacc::CompositeInstruction::mapBits, "")
       .def("setTag", &xacc::CompositeInstruction::setTag, "")
       .def("getTag", &xacc::CompositeInstruction::getTag, "")
+      .def("nPhysicalBits", &xacc::CompositeInstruction::nPhysicalBits, "")
       .def(
           "defaultPlacement",
           [&](std::shared_ptr<CompositeInstruction> program,

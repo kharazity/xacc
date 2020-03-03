@@ -64,41 +64,52 @@ class AerAccelerator(xacc.Accelerator):
         qobj = QasmQobjSchema().load(qobj_json['qObject'])
         exps = qobj.experiments
         measures = {}
-        qobj.experiments[0].config.n_qubits = buffer.size()
+        print("BUFFER SIZE: ", buffer.size())
+        qobj.experiments[0].config.n_qubits = program.nPhysicalBits() 
+        #qobj.experiments[0].config.n_qubits = buffer.size()
+
+        print("experiments: ", exps[0])
         for i in exps[0].instructions:
             if i.name == "measure":
-                measures[i.memory[0]] =i.qubits[0]
+                measures[i.memory[0]] = i.qubits[0]
+                print(i.memory[0])
+                print(i.qubits[0])
 
         backend = Aer.get_backend('qasm_simulator')
 
         if self.noise_model is not None:
+            print("executing with noise model")
             job_sim = backend.run(qobj, noise_model=self.noise_model)
+            print(job_sim)
         else:
             job_sim = backend.run(qobj)
 
         sim_result = job_sim.result()
+        print(sim_result)
 
         for b,c in sim_result.get_counts().items():
             bitstring = b
             if len(b) < buffer.size():
                 tmp = ['0' for i in range(buffer.size())]
                 for bit_loc, qubit in measures.items():
+                    print(qubit)
                     lb = list(b)
                     tmp[len(tmp)-1-qubit] = lb[len(b)-bit_loc-1]
                 bitstring = ''.join(tmp)
             buffer.appendMeasurement(bitstring,c)
 
     def execute(self, buffer, programs):
-
         # Translate IR to a Qobj Json String
         if isinstance(programs, list) and len(programs) > 1:
             for p in programs:
                 tmpBuffer = xacc.qalloc(buffer.size())
+                print("sub buffer size: ", tmpBuffer.size())
                 tmpBuffer.setName(p.name())
                 self.execute_one_qasm(tmpBuffer, p)
                 buffer.appendChild(p.name(),tmpBuffer)
         else:
             if isinstance(programs, list):
                 programs = programs[0]
+            print(programs)
             self.execute_one_qasm(buffer, programs)
 
