@@ -46,3 +46,7 @@ compile_commands.json
 # IDE files
 .vscode/*
 .theia/*
+
+#OTHERS
+*.DS_store
+*.gitignore
