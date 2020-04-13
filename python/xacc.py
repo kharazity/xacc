@@ -200,6 +200,8 @@ class DecoratorFunction(ABC):
 
         ir = compiler.compile(self.src, self.qpu)
         self.compiledKernel = ir.getComposites()[0]
+        if 'tag' in self.kwargs:
+            self.compiledKernel.setTag(self.kwargs['tag'])
 
     def overrideAccelerator(self, acc):
         self.qpu = acc
@@ -249,6 +251,7 @@ class WrappedF(DecoratorFunction):
             raise RuntimeError(
                 'First argument of an xacc kernel must be the Accelerator Buffer to operate on.')
         fevaled = self.compiledKernel.eval(argsList[1:])
+        fevaled.setTag(self.compiledKernel.getTag())
         self.qpu.execute(argsList[0], fevaled)
         return
 
@@ -302,24 +305,30 @@ class PyServiceRegistry(object):
         for servType in serviceList:
             self.get_algorithm_services(servType)
 
-        for accName, acc in self.registry['accelerator'].items():
-            debug("[xacc-py] Contributing "+accName+" Accelerator")
-            contributeService(accName, acc)
-        for irtName, irt in self.registry['irtransformation'].items():
-            debug("[xacc-py] Contributing "+irtName+" IRTransformation")
-            contributeService(irtName, irt)
-        for obsName, obs in self.registry['observable'].items():
-            debug("[xacc-py] Contributing "+obsName+" Observable")
-            contributeService(obsName, obs)
-        for optName, opt in self.registry['optimizer'].items():
-            debug("[xacc-py] Contributing "+optName+" Optimizer")
-            contributeService(optName, opt)
-        for cName, c in self.registry['compiler'].items():
-            debug("[xacc-py] Contributing "+cName+" Compiler")
-            contributeService(cName, c)
-        for aName, a in self.registry['algorithm'].items():
-            debug("[xacc-py] Contributing "+aName+" Algorithm")
-            contributeService(aName, a)
+        if 'accelerator' in self.registry:
+            for accName, acc in self.registry['accelerator'].items():
+                debug("[xacc-py] Contributing "+accName+" Accelerator")
+                contributeService(accName, acc)
+        if 'irtransformation' in self.registry:
+            for irtName, irt in self.registry['irtransformation'].items():
+                debug("[xacc-py] Contributing "+irtName+" IRTransformation")
+                contributeService(irtName, irt)
+        if 'observable' in self.registry:
+            for obsName, obs in self.registry['observable'].items():
+                debug("[xacc-py] Contributing "+obsName+" Observable")
+                contributeService(obsName, obs)
+        if 'optimizer' in self.registry:
+            for optName, opt in self.registry['optimizer'].items():
+                debug("[xacc-py] Contributing "+optName+" Optimizer")
+                contributeService(optName, opt)
+        if 'compiler' in self.registry:
+            for cName, c in self.registry['compiler'].items():
+                debug("[xacc-py] Contributing "+cName+" Compiler")
+                contributeService(cName, c)
+        if 'algorithm' in self.registry:
+            for aName, a in self.registry['algorithm'].items():
+                debug("[xacc-py] Contributing "+aName+" Algorithm")
+                contributeService(aName, a)
 
     def get_algorithm_services(self, serviceType):
         tmp = self.context.get_all_service_references(serviceType)
@@ -379,7 +388,7 @@ def benchmark(xacc_settings):
         exit(1)
 
     inputfile = xacc_settings['input-file-name'] if 'input-file-name' in xacc_settings else None
-    
+
     starttime = time.time()
     buffer = _benchmark.execute(xacc_settings)
     elapsedtime = time.time() - starttime
@@ -440,6 +449,34 @@ def main(argv=None):
         benchmark_from_cmd_line(opts)
 
 initialize()
+
+try:
+    from _pyquaC import *
+except ImportError:
+    # Nothing, QuaC is not available
+    pass
+
+def qalloc(*args):
+    if inspect.stack()[-1].code_context is not None:
+        buffer_name = inspect.stack()[-1].code_context[0].split(' = ')[0]
+        if len(args) == 1:
+            buffer = internal_qalloc_with_size(int(args[0]))
+        else:
+            buffer = internal_qalloc_no_size()
+
+        counter = 0
+        while hasBuffer(buffer_name):
+            buffer_name += str(counter)
+
+        buffer.setName(buffer_name)
+        storeBuffer(buffer)
+        return buffer
+    else:
+        if len(args) == 1:
+            buffer = internal_qalloc_with_size(int(args[0]))
+        else:
+            buffer = internal_qalloc_no_size()
+        return buffer
 
 loaded_from_cpp_dont_finalize = False
 
