@@ -16,7 +16,7 @@ file (GLOB_RECURSE HEADERS *.hpp)
 file (GLOB SRC RDMPurificationDecorator.cpp
                ImprovedSamplingDecorator.cpp
                ROErrorDecorator.cpp
-               RichExtrapDecorator.cpp
+               #RichExtrapDecorator.cpp
 	           AssignmentErrorKernelDecorator.cpp
                DecoratorsActivator.cpp)
 

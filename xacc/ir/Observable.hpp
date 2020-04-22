@@ -14,10 +14,24 @@
 #define XACC_IR_OBSERVABLE_HPP_
 #include "CompositeInstruction.hpp"
 #include "Utils.hpp"
+#include "operators.hpp"
+
+namespace xacc{
+  class Observable;
+}
+
+bool operator==(const xacc::Observable &lhs, const xacc::Observable &rhs);
+
 
 namespace xacc {
 
-class Observable : public Identifiable {
+
+class Observable : public Identifiable, public tao::operators::commutative_ring<Observable>,
+                   public tao::operators::equality_comparable<Observable>,
+                   public tao::operators::commutative_multipliable<Observable, double>,
+                   public tao::operators::commutative_multipliable<Observable, std::complex<double>>
+
+{
 public:
   virtual std::vector<std::shared_ptr<CompositeInstruction>>
   observe(std::shared_ptr<CompositeInstruction> CompositeInstruction) = 0;
@@ -42,7 +56,19 @@ public:
   virtual std::complex<double> coefficient() {
     return std::complex<double>(1.0, 0.0);
   }
+  
+  virtual Observable &operator+=(const Observable &rhs) noexcept = 0;
+  virtual Observable &operator-=(const Observable &rhs) noexcept = 0;
+  virtual Observable &operator*=(const Observable &v) noexcept  = 0;
+  virtual bool operator==(const Observable &rhs) noexcept = 0;
+
+  
+  virtual Observable &operator*=(const double rhs) noexcept  = 0;
+  virtual Observable &operator*=(const std::complex<double> rhs) noexcept = 0;
+
 };
+
+
 
 template Observable *
 HeterogeneousMap::getPointerLike<Observable>(const std::string key) const;

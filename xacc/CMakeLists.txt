@@ -43,6 +43,7 @@ add_library(xacc SHARED
             compiler/qalloc.cpp
             service/ServiceRegistry.cpp
             service/xacc_service.cpp
+
             accelerator/remote/RemoteAccelerator.cpp)
 
 add_dependencies(xacc cpr)
@@ -69,6 +70,7 @@ message(
                                     algorithm
                                     optimizer
                                     ${CMAKE_SOURCE_DIR}/tpls/mpark-variant
+                                    ${CMAKE_SOURCE_DIR}/tpls/taocpp
                                     ${CMAKE_SOURCE_DIR}/tpls/nlohmann)
 
   target_link_libraries(xacc
@@ -95,7 +97,8 @@ else()
                                     algorithm
                                     optimizer
                                     ${CMAKE_SOURCE_DIR}/tpls/mpark-variant
-                                    ${CMAKE_SOURCE_DIR}/tpls/nlohmann)
+                                    ${CMAKE_SOURCE_DIR}/tpls/nlohmann
+                                    ${CMAKE_SOURCE_DIR}/tpls/taocpp)
   target_link_libraries(xacc PUBLIC CppMicroServices PRIVATE cpr)
 
 endif()

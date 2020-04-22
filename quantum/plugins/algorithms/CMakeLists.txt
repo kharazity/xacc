@@ -11,7 +11,7 @@
 #   Alexander J. McCaskey - initial API and implementation
 # *******************************************************************************/
 add_subdirectory(vqe)
-add_subdirectory(rdm)
+#add_subdirectory(rdm)
 add_subdirectory(ml)
 add_subdirectory(rotoselect)
 add_subdirectory(qpt)
