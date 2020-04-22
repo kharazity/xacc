@@ -38,7 +38,6 @@ bool operator==(const xacc::quantum::PauliOperator &lhs,
 #include "operators.hpp"
 
 namespace xacc {
-
 namespace quantum {
 
 // A Term can be a coefficient, a variable coefficient, and the terms themselves
@@ -219,7 +218,7 @@ public:
 
   std::pair<std::vector<int>, std::vector<int>>
   toBinaryVector(const int nQubits);
-};
+}; //end class Term
 
 class PauliOperator
     : public xacc::Observable,
@@ -234,7 +233,7 @@ protected:
 
 public:
   std::shared_ptr<Observable> clone() override {
-    return std::make_shared<PauliOperator>();
+    return std::shared_ptr<PauliOperator>();
   }
 
   std::unordered_map<std::string, Term>::iterator begin() {
@@ -268,7 +267,7 @@ public:
     return ret;
   }
 
-  virtual std::vector<std::shared_ptr<Observable>> getNonIdentitySubTerms() {
+  virtual std::vector<std::shared_ptr<Observable>>  getNonIdentitySubTerms() override {
     std::vector<std::shared_ptr<Observable>> ret;
     for (auto &term : getTerms()) {
       if (term.first != "I") {
@@ -279,7 +278,7 @@ public:
     return ret;
   }
 
-  virtual std::shared_ptr<Observable> getIdentitySubTerm() {
+  virtual std::shared_ptr<Observable> getIdentitySubTerm() override {
     for (auto &term : getTerms()) {
       if (term.first == "I") {
         return std::make_shared<PauliOperator>(term.second.ops(),
@@ -337,17 +336,24 @@ public:
   int nQubits();
   const int nBits() override { return nQubits(); }
 
-  PauliOperator &operator+=(const PauliOperator &v) noexcept;
-  PauliOperator &operator-=(const PauliOperator &v) noexcept;
-  PauliOperator &operator*=(const PauliOperator &v) noexcept;
-  bool operator==(const PauliOperator &v) noexcept;
-  PauliOperator &operator*=(const double v) noexcept;
-  PauliOperator &operator*=(const std::complex<double> v) noexcept;
+
+
+  xacc::Observable &operator+=(const xacc::Observable& rhs) noexcept override;
+  xacc::Observable &operator-=(const xacc::Observable &rhs) noexcept override;
+  xacc::Observable &operator*=(const xacc::Observable &v) noexcept override;
+  bool operator==(const xacc::Observable &rhs) noexcept override;
+
+
+  xacc::Observable &operator*=(const double rhs) noexcept override;
+  xacc::Observable &operator*=(const std::complex<double> rhs) noexcept override;
+
 
   const std::string name() const override { return "pauli"; }
   const std::string description() const override { return ""; }
   void fromOptions(const HeterogeneousMap &options) override { return; }
 };
+
+
 } // namespace quantum
 
 template const quantum::PauliOperator &

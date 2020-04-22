@@ -389,9 +389,14 @@ bool PauliOperator::commutes(PauliOperator &op) {
 
 void PauliOperator::clear() { terms.clear(); }
 
-PauliOperator &PauliOperator::operator+=(const PauliOperator &v) noexcept {
-  for (auto &kv : v.terms) {
+bool PauliOperator::operator==(const xacc::Observable &rhs) noexcept{
+  return 1;
+}
 
+
+xacc::Observable &PauliOperator::operator+=(const xacc::Observable &v) noexcept{
+  auto casted_v = dynamic_cast<const PauliOperator &>(v);
+  for (auto &kv : casted_v.terms) {
     auto termId = kv.first;
     auto otherTerm = kv.second;
 
@@ -409,15 +414,18 @@ PauliOperator &PauliOperator::operator+=(const PauliOperator &v) noexcept {
   return *this;
 }
 
-PauliOperator &PauliOperator::operator-=(const PauliOperator &v) noexcept {
-  return operator+=(-1.0 * v);
+xacc::Observable &PauliOperator::operator-=(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const PauliOperator &>(v);
+  return operator+=(-1.0 * casted_v);
 }
 
-PauliOperator &PauliOperator::operator*=(const PauliOperator &v) noexcept {
 
+
+xacc::Observable &PauliOperator::operator*=(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const PauliOperator &>(v);
   std::unordered_map<std::string, Term> newTerms;
   for (auto &kv : terms) {
-    for (auto &vkv : v.terms) {
+    for (auto &vkv : casted_v.terms) {
       auto multTerm = kv.second * vkv.second;
       auto id = multTerm.id();
 
@@ -434,41 +442,6 @@ PauliOperator &PauliOperator::operator*=(const PauliOperator &v) noexcept {
   return *this;
 }
 
-bool PauliOperator::operator==(const PauliOperator &v) noexcept {
-  if (terms.size() != v.terms.size()) {
-    return false;
-  }
-
-  for (auto &kv : terms) {
-    bool found = false;
-    for (auto &vkv : v.terms) {
-
-      if (kv.second.operator==(vkv.second) |
-          (kv.second.id() == "I" && vkv.second.id() == "I")) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-PauliOperator &PauliOperator::operator*=(const double v) noexcept {
-  return operator*=(std::complex<double>(v, 0));
-}
-
-PauliOperator &
-PauliOperator::operator*=(const std::complex<double> v) noexcept {
-  for (auto &kv : terms) {
-    std::get<0>(kv.second) *= v;
-  }
-  return *this;
-}
 
 std::vector<Triplet> Term::getSparseMatrixElements(const int nQubits) {
 
@@ -656,7 +629,7 @@ std::shared_ptr<IR> PauliOperator::toXACCIR() {
 int PauliOperator::nQubits() {
   auto maxInt = 0;
   if (terms.empty())
-    return 0;
+    return 1;
 
   for (auto &kv : terms) {
     auto ops = kv.second.ops();

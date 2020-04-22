@@ -13,9 +13,12 @@
 #include <gtest/gtest.h>
 #include "PauliOperator.hpp"
 #include "xacc.hpp"
+#include "xacc_observable.hpp"
+#include "xacc_service.hpp"
 #include "IRProvider.hpp"
 #include <Eigen/Dense>
-#include "xacc_service.hpp"
+#include "xacc_quantum_gate_api.hpp"
+
 
 using namespace xacc::quantum;
 
@@ -41,6 +44,31 @@ TEST(PauliOperatorTester,checkEasy) {
 	std::cout << "CURRENTMULT: " << op.toString() << "\n";
 
     EXPECT_EQ(0, op.nQubits());
+
+}
+TEST(PauliOperatorTester, ObservableSimpleSum){
+
+  	auto H = getObservable("pauli", std::string("X0 Y1 + Y0 X1"));
+	auto H2 = getObservable("pauli", std::string("Y1 X0 + X1 Y0"));
+
+  	auto compiler = xacc::getCompiler("xasm");
+  	auto IR = compiler->compile(
+      R"(
+   	__qpu__ void foo_test (qbit v, double x, double y, double z, std::shared_ptr<Observable> H) {
+     Rx(v[0], x);
+     U(v[0], x, y, z);
+     exp_i_theta(v, x, H);
+   	}
+   	)");
+	
+	auto ansatz = IR->getComposite("foo_test");
+	
+	H += H2;
+
+	H->observe(ansatz);
+
+	std::cout<<H->toString()<<std::endl;
+  	std::cout << ansatz->toString() << "\n";
 
 }
 

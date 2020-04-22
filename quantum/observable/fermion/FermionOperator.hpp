@@ -186,12 +186,12 @@ public:
   void clear();
   std::unordered_map<std::string, FermionTerm> getTerms() const { return terms; }
 
-  FermionOperator &operator+=(const FermionOperator &v) noexcept;
-  FermionOperator &operator-=(const FermionOperator &v) noexcept;
-  FermionOperator &operator*=(const FermionOperator &v) noexcept;
-  bool operator==(const FermionOperator &v) noexcept;
-  FermionOperator &operator*=(const double v) noexcept;
-  FermionOperator &operator*=(const std::complex<double> v) noexcept;
+  xacc::Observable& operator+=(const xacc::Observable &v) noexcept override;
+  xacc::Observable& operator-=(const xacc::Observable &v) noexcept override;
+  xacc::Observable &operator*=(const xacc::Observable &v) noexcept override;
+  bool operator==(const xacc::Observable &v) noexcept override;
+  xacc::Observable &operator*=(const double v) noexcept override;
+  xacc::Observable &operator*=(const std::complex<double> v) noexcept override;
 
   const std::string name() const override {
       return "fermion";

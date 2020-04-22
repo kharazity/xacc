@@ -170,10 +170,11 @@ const int FermionOperator::nBits() {
   return maxInt + 1;
  }
 
-FermionOperator &
-FermionOperator::operator+=(const FermionOperator &v) noexcept {
-  FermionOperator vv = v;
-  for (auto &kv : v.terms) {
+
+xacc::Observable &FermionOperator::operator+=(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const FermionOperator &>(v);
+  FermionOperator vv = casted_v;
+  for (auto &kv : casted_v.terms) {
 
     auto termId = kv.first;
     auto otherTerm = kv.second;
@@ -194,17 +195,17 @@ FermionOperator::operator+=(const FermionOperator &v) noexcept {
   return *this;
 }
 
-FermionOperator &
-FermionOperator::operator-=(const FermionOperator &v) noexcept {
-  return operator+=(-1.0 * v);
+
+xacc::Observable &FermionOperator::operator-=(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const FermionOperator &>(v);
+  return operator+=(-1.0 * casted_v);
 }
 
-FermionOperator &
-FermionOperator::operator*=(const FermionOperator &v) noexcept {
-
+xacc::Observable &FermionOperator::operator*=(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const FermionOperator &>(v);
   std::unordered_map<std::string, FermionTerm> newTerms;
   for (auto &kv : terms) {
-    for (auto &vkv : v.terms) {
+    for (auto &vkv : casted_v.terms) {
       auto multTerm = kv.second * vkv.second;
       if (!multTerm.ops().empty()) {
         auto id = multTerm.id();
@@ -223,14 +224,15 @@ FermionOperator::operator*=(const FermionOperator &v) noexcept {
   return *this;
 }
 
-bool FermionOperator::operator==(const FermionOperator &v) noexcept {
-  if (terms.size() != v.terms.size()) {
+bool FermionOperator::operator==(const xacc::Observable &v) noexcept {
+  auto casted_v = dynamic_cast<const FermionOperator &>(v);
+  if (terms.size() != casted_v.terms.size()) {
     return false;
   }
 
   for (auto &kv : terms) {
     bool found = false;
-    for (auto &vkv : v.terms) {
+    for (auto &vkv : casted_v.terms) {
 
       if (kv.second.operator==(vkv.second)) {
         found = true;
@@ -246,12 +248,12 @@ bool FermionOperator::operator==(const FermionOperator &v) noexcept {
   return true;
 }
 
-FermionOperator &FermionOperator::operator*=(const double v) noexcept {
+xacc::Observable &FermionOperator::operator*=(const double v) noexcept {
   return operator*=(std::complex<double>(v, 0));
 }
 
-FermionOperator &
-FermionOperator::operator*=(const std::complex<double> v) noexcept {
+
+xacc::Observable &FermionOperator::operator*=(const std::complex<double> v) noexcept {
   for (auto &kv : terms) {
     std::get<0>(kv.second) *= v;
   }
@@ -260,6 +262,8 @@ FermionOperator::operator*=(const std::complex<double> v) noexcept {
 
 } // namespace quantum
 } // namespace xacc
+
+/*
 
 bool operator==(const xacc::quantum::FermionOperator &lhs,
                 const xacc::quantum::FermionOperator &rhs) {
@@ -283,3 +287,4 @@ bool operator==(const xacc::quantum::FermionOperator &lhs,
 
   return true;
 }
+*/

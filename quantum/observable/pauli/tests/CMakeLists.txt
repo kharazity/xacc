@@ -20,6 +20,7 @@ include_directories(${CMAKE_SOURCE_DIR}/quantum/gate/utils)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/taocpp)
 include_directories(${CMAKE_SOURCE_DIR}/tpls/eigen)
 include_directories(${CMAKE_SOURCE_DIR}/quantum/gate/observable)
+include_directories(${CMAKE_SOURCE_DIR}/quantum/gate)
 
 add_xacc_test(PauliOperator)
 
